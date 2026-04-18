@@ -1,90 +1,143 @@
 // tests/fixtures/sample.cpp
-// Fixture minimo para testear c_parser.py
-// Cubre: includes, defines, clase con herencia, constructor,
-//        metodos virtuales, enum class, funciones sueltas, variables globales.
+// Fixture representativo de firmware embebido / C++ moderno.
+// Cubre: includes sistema y locales, defines, enum class, clase base
+// con metodos inline, clase derivada, constructores con lista de
+// inicializacion, funciones libres, variables globales con calificadores.
 
-#include <iostream>
+#include <Arduino.h>
+#include <Wire.h>
 #include <vector>
 #include <memory>
-#include "sensor.h"
+#include "SensorADE9000.h"
+#include "config.h"
 
-#define VERSION_MAYOR 2
-#define MAX_BUFFER 1024
-#define NOMBRE_APP "CodeMap"
+#define HW_VERSION 3
+#define MAX_LECTURAS 512
+#define ID_DISPOSITIVO "ADE9000-A"
 
-const int TIMEOUT_MS = 5000;
-static int instancias = 0;
+const int PIN_ALERTA = 4;
+const float FACTOR_ESCALA = 0.001f;
+static int total_instancias = 0;
 
-enum class EstadoSensor { Activo, Inactivo, Error };
+enum class EstadoSensor {
+    Inactivo,
+    Calibrando,
+    Activo,
+    Error
+};
 
-class Sensor {
+class SensorBase {
 public:
-    std::string id;
-    double ultimo_valor;
+    String id;
+    float ultimo_valor;
+    bool habilitado;
 
-    Sensor(const std::string& id);
-    virtual ~Sensor() = default;
+    SensorBase(const String& id, bool habilitado = true) {
+        this->id = id;
+        this->habilitado = habilitado;
+        this->ultimo_valor = 0.0f;
+        total_instancias++;
+        _inicializar();
+    }
 
-    virtual double leer();
-    virtual std::string toString() const;
-    bool estaActivo() const;
+    virtual float leer() {
+        if (!habilitado) return -1.0f;
+        return ultimo_valor;
+    }
+
+    virtual void calibrar(float referencia) {
+        ultimo_valor = referencia;
+        estado = EstadoSensor::Calibrando;
+    }
+
+    bool estaActivo() const {
+        return estado == EstadoSensor::Activo && habilitado;
+    }
+
+    static int contarInstancias() {
+        return total_instancias;
+    }
 
 protected:
     EstadoSensor estado;
 
-private:
-    void _inicializar();
+    void _inicializar() {
+        estado = EstadoSensor::Inactivo;
+        Wire.begin();
+    }
 };
 
-Sensor::Sensor(const std::string& id) : id(id), estado(EstadoSensor::Activo) {
-    ultimo_valor = 0.0;
-    instancias++;
-    _inicializar();
-}
-
-double Sensor::leer() {
-    return ultimo_valor;
-}
-
-std::string Sensor::toString() const {
-    return "Sensor(" + id + ")";
-}
-
-bool Sensor::estaActivo() const {
-    return estado == EstadoSensor::Activo;
-}
-
-void Sensor::_inicializar() {
-    ultimo_valor = -1.0;
-}
-
-class SensorADE9000 : public Sensor {
+class SensorADE9000 : public SensorBase {
 public:
     int canal;
+    float factor_calibracion;
 
-    SensorADE9000(const std::string& id, int canal);
-    double leer() override;
+    SensorADE9000(const String& id, int canal) : SensorBase(id) {
+        this->canal = canal;
+        this->factor_calibracion = FACTOR_ESCALA;
+        _buffer.reserve(MAX_LECTURAS);
+        configurarRegistros();
+    }
+
+    float leer() override {
+        float raw = _leerADC();
+        ultimo_valor = raw * factor_calibracion;
+        estado = EstadoSensor::Activo;
+        return ultimo_valor;
+    }
+
+    void calibrar(float referencia) override {
+        SensorBase::calibrar(referencia);
+        factor_calibracion = referencia / _leerADC();
+    }
+
+    std::vector<float> leerLote(int n) {
+        std::vector<float> resultados;
+        for (int i = 0; i < n && i < MAX_LECTURAS; i++) {
+            resultados.push_back(leer());
+            delay(10);
+        }
+        return resultados;
+    }
 
 private:
-    std::vector<double> _buffer;
+    std::vector<float> _buffer;
+
+    float _leerADC() {
+        Wire.beginTransmission(canal);
+        Wire.write(0x00);
+        Wire.endTransmission();
+        return (float)Wire.read() * 0.01f;
+    }
+
+    void configurarRegistros() {
+        Wire.beginTransmission(canal);
+        Wire.write(HW_VERSION);
+        Wire.endTransmission();
+    }
 };
 
-SensorADE9000::SensorADE9000(const std::string& id, int canal)
-    : Sensor(id), canal(canal) {
-    _buffer.reserve(MAX_BUFFER);
+float calcularPromedio(const std::vector<float>& valores) {
+    if (valores.empty()) return 0.0f;
+    float suma = 0.0f;
+    for (const float& v : valores) suma += v;
+    return suma / (float)valores.size();
 }
 
-double SensorADE9000::leer() {
-    return Sensor::leer() * 1000.0;
+float calcularRMS(const std::vector<float>& valores) {
+    if (valores.empty()) return 0.0f;
+    float suma_cuadrados = 0.0f;
+    for (const float& v : valores) suma_cuadrados += v * v;
+    return sqrt(suma_cuadrados / (float)valores.size());
 }
 
-double promedio(const std::vector<double>& valores) {
-    if (valores.empty()) return 0.0;
-    double suma = 0.0;
-    for (const auto& v : valores) suma += v;
-    return suma / valores.size();
+void setup() {
+    Serial.begin(115200);
+    pinMode(PIN_ALERTA, OUTPUT);
+    Wire.begin();
 }
 
-std::string formatear(const Sensor& s) {
-    return s.toString();
+void loop() {
+    delay(1000);
+    digitalWrite(PIN_ALERTA, HIGH);
 }

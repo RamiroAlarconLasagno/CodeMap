@@ -20,7 +20,6 @@ def _es_valido(ruta: Path, raiz: Path) -> bool:
         return False
     if _lenguaje(ruta) is None:
         return False
-    # Verificar que ninguna parte de la ruta relativa este excluida
     try:
         partes = ruta.relative_to(raiz).parts
     except ValueError:
@@ -37,13 +36,16 @@ def _parsear(ruta: Path, raiz: Path) -> ArchivoInfo:
         return parsear_archivo(ruta, raiz)
 
     elif lenguaje == "dart":
-        raise NotImplementedError("dart_parser no implementado aun (Fase 4)")
+        from core.analyzer.dart_parser import parsear_archivo
+        return parsear_archivo(ruta, raiz)
 
     elif lenguaje in ("js", "jsx", "ts", "tsx"):
-        raise NotImplementedError("js_parser no implementado aun (Fase 4)")
+        from core.analyzer.js_parser import parsear_archivo
+        return parsear_archivo(ruta, raiz, lenguaje)
 
     elif lenguaje in ("c", "cpp"):
-        raise NotImplementedError("c_parser no implementado aun (Fase 4)")
+        from core.analyzer.c_parser import parsear_archivo
+        return parsear_archivo(ruta, raiz, lenguaje)
 
     else:
         raise NotImplementedError(f"Lenguaje no soportado: {lenguaje}")
@@ -60,11 +62,7 @@ def construir_indice(carpeta: Path) -> ProjectIndex:
         try:
             info = _parsear(ruta, carpeta)
             archivos[info.ruta_relativa] = info
-        except NotImplementedError:
-            # Parser no implementado aun — saltar silenciosamente
-            pass
         except Exception as e:
-            # Error inesperado — registrar en el indice pero continuar
             ruta_rel = str(ruta.relative_to(carpeta))
             archivos[ruta_rel] = ArchivoInfo(
                 ruta_relativa=ruta_rel,
