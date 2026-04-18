@@ -1,0 +1,11 @@
+# requirements.txt
+
+# Servidor web y API REST
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# Servidor MCP para Claude Desktop
+mcp>=1.0.0
+
+# Opcional: diálogo gráfico de carpeta (sin esto usa tkinter del stdlib)
+# PySide6>=6.7.0

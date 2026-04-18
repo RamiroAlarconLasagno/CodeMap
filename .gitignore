@@ -1,1 +1,20 @@
+# entorno virtual
+.venv/
+
+# build / instalacion editable
+*.egg-info/
+dist/
+build/
+
+# pytest y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# proyecto
 docs/llm/
