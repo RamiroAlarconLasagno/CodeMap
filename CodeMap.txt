@@ -60,6 +60,14 @@
     [METODO] total_metodos(self) -> int
     [METODO] total_variables(self) -> int
 ----------------------------------------------------------------------------------------------------
+[CARPETA] core/mcp
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/mcp
+[ARCHIVO] server.py
+  [FUNCION] async _manejar_herramienta(nombre: str, args: dict) -> list[TextContent] :: "Despacha la herramienta MCP a la funcion correspondiente."
+  [FUNCION] async iniciar_servidor(carpeta: Path) -> None :: "Construye el indice y arranca el servidor MCP por stdio."
+----------------------------------------------------------------------------------------------------
 [CARPETA] core
 [ARCHIVO] queries.py
   [FUNCION] q_carpetas(indice: ProjectIndex) -> dict[str, list[str]] :: "Arbol carpeta -> lista de archivos."
@@ -79,6 +87,45 @@
   [FUNCION] set_indice(indice: ProjectIndex) -> None :: "Reemplaza el indice activo."
   [FUNCION] esta_inicializado() -> bool :: "Verifica si el indice fue inicializado, sin lanzar excepcion."
   [FUNCION] _reset() -> None :: "Solo para tests — resetea el estado global."
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] control.py
+  [CLASE] CarpetaBody()
+  [FUNCION] estado() [@router.get('/estado')]
+  [FUNCION] post_reanalizar() [@router.post('/reanalizar')]
+  [FUNCION] exportar(nivel: str) [@router.get('/exportar/{nivel}', response_class=PlainTextResponse)]
+  [FUNCION] cambiar_carpeta(body: CarpetaBody) [@router.post('/carpeta')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] estructura.py
+  [FUNCION] carpetas() [@router.get('/carpetas')]
+  [FUNCION] clases(archivo: Optional[str] = None) [@router.get('/clases')]
+  [FUNCION] metodos(clase: str) [@router.get('/metodos/{clase}')]
+  [FUNCION] funciones(archivo: Optional[str] = None) [@router.get('/funciones')]
+  [FUNCION] imports(archivo: Optional[str] = None) [@router.get('/imports')]
+  [FUNCION] variables(archivo: Optional[str] = None, scope: Optional[str] = None) [@router.get('/variables')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] relaciones.py
+  [FUNCION] llamadas(simbolo: str) [@router.get('/llamadas/{simbolo:path}')]
+  [FUNCION] usos(nombre: str) [@router.get('/usos/{nombre}')]
+  [FUNCION] libreria(nombre: str) [@router.get('/libreria/{nombre}')]
+  [FUNCION] buscar(patron: str) [@router.get('/buscar')]
+  [FUNCION] idioma() [@router.get('/idioma')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web
+[ARCHIVO] server.py
+  [FUNCION] crear_app() -> FastAPI :: "Fabrica la FastAPI app con todos los routers registrados."
+  [FUNCION] iniciar_web(carpeta: Path) -> None :: "Construye el indice y arranca el servidor FastAPI en localhost:8000."
 ----------------------------------------------------------------------------------------------------
 [CARPETA] /
 [ARCHIVO] main.py
@@ -206,6 +253,32 @@
   [FUNCION] test_indice_ultimo_analisis()
 ----------------------------------------------------------------------------------------------------
 [CARPETA] tests
+[ARCHIVO] test_mcp.py
+  [FUNCION] reset_state() [@pytest.fixture(autouse=True)]
+  [FUNCION] indice_prueba() [@pytest.fixture()] :: "Indice sintetico con una clase, un metodo, una funcion y un import."
+  [FUNCION] async _llamar(nombre, args = None)
+  [FUNCION] async _json(nombre, args = None)
+  [FUNCION] async test_codemap_carpetas(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_clases_sin_filtro(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_clases_con_archivo(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_metodos_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_metodos_no_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_funciones(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_imports(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_variables_modulo(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_variables_clase(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_llamadas_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_llamadas_no_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_usos(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_libreria(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_buscar(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_idioma(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_estado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_exportar_firmas(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_exportar_estructura(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_herramienta_desconocida(indice_prueba) [@pytest.mark.asyncio]
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
 [ARCHIVO] test_python_parser.py
   [FUNCION] info() [@pytest.fixture]
   [FUNCION] test_sin_error(info)
@@ -291,4 +364,32 @@
   [FUNCION] test_reset_limpia_el_estado()
   [FUNCION] test_esta_inicializado_false_despues_de_reset()
   [FUNCION] test_get_indice_despues_de_reset_lanza_error()
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_web.py
+  [FUNCION] reset_state() [@pytest.fixture(autouse=True)]
+  [FUNCION] indice_prueba() [@pytest.fixture()]
+  [FUNCION] client(indice_prueba) [@pytest.fixture()]
+  [FUNCION] test_get_carpetas(client)
+  [FUNCION] test_get_clases_sin_filtro(client)
+  [FUNCION] test_get_clases_con_archivo(client)
+  [FUNCION] test_get_metodos_encontrado(client)
+  [FUNCION] test_get_metodos_no_encontrado(client)
+  [FUNCION] test_get_funciones(client)
+  [FUNCION] test_get_imports(client)
+  [FUNCION] test_get_variables_sin_filtro(client)
+  [FUNCION] test_get_variables_scope_modulo(client)
+  [FUNCION] test_get_llamadas_encontrado(client)
+  [FUNCION] test_get_llamadas_no_encontrado(client)
+  [FUNCION] test_get_usos(client)
+  [FUNCION] test_get_libreria(client)
+  [FUNCION] test_get_buscar(client)
+  [FUNCION] test_get_idioma(client)
+  [FUNCION] test_get_estado(client)
+  [FUNCION] test_get_exportar_firmas(client)
+  [FUNCION] test_get_exportar_estructura(client)
+  [FUNCION] test_get_exportar_completo(client)
+  [FUNCION] test_get_exportar_nivel_invalido(client)
+  [FUNCION] test_post_carpeta_existente(client, tmp_path)
+  [FUNCION] test_post_carpeta_no_existe(client)
 ----------------------------------------------------------------------------------------------------
