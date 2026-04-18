@@ -200,7 +200,7 @@ export default function App() {
         />
       </div>
 
-      {/* FilterPanel — columna izquierda */}
+      {/* FilterPanel — columna izquierda (incluye SearchBar y filtro libreria) */}
       <FilterPanel
         filtros={filtros}
         onFiltroChange={handleFiltroChange}
@@ -209,6 +209,8 @@ export default function App() {
         onLibreriaRemove={handleLibreriaRemove}
         vista={vista}
         onVistaChange={handleVistaChange}
+        busqueda={busqueda}
+        onBuscar={handleBuscar}
       />
 
       {/* FileTree — columna central */}
@@ -216,9 +218,7 @@ export default function App() {
         archivos={archivos}
         filtros={filtros}
         seleccionado={seleccionado}
-        busqueda={busqueda}
         onSeleccionar={handleSeleccionar}
-        onBuscar={handleBuscar}
         cargando={cargando}
         error={error}
       />
