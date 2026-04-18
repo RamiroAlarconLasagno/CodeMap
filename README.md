@@ -219,6 +219,13 @@ Todas con prefijo `codemap_`:
 
 ## Instalación
 
+### Requisitos
+
+- Python 3.9+
+- Node.js 18+ (solo para la interfaz web)
+
+### Backend
+
 ```bash
 git clone https://github.com/.../codemap
 cd codemap
@@ -233,7 +240,24 @@ mcp>=1.0.0
 # PySide6>=6.7.0  # opcional, para diálogo gráfico de carpeta
 ```
 
-Python 3.9+ requerido (`ast.unparse` disponible desde 3.9).
+### Frontend (interfaz web)
+
+Solo necesario si se usa `--web`. El modo `--mcp` no requiere Node.js.
+
+```bash
+cd frontend
+npm install
+```
+
+Para desarrollo con recarga en caliente (proxy automático a `:8000`):
+```bash
+npm run dev        # abre localhost:5173
+```
+
+Para generar el build de producción que sirve FastAPI:
+```bash
+npm run build      # genera frontend/dist/
+```
 
 ---
 

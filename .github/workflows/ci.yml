@@ -8,7 +8,10 @@ on:
     branches: ["main"]
 
 jobs:
-  test:
+  # -----------------------------------------------------------------------
+  # Backend Python
+  # -----------------------------------------------------------------------
+  test-python:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,10 +31,38 @@ jobs:
           pip install pytest pytest-asyncio httpx
 
       - name: Ejecutar tests
-        run: |
-          pytest tests/ -v --tb=short
+        run: pytest tests/ -v --tb=short
 
       - name: Resumen
         if: always()
-        run: |
-          echo "Tests completados para commit: ${{ github.sha }}"
+        run: echo "Tests Python completados para commit ${{ github.sha }}"
+
+  # -----------------------------------------------------------------------
+  # Frontend React — verifica que los endpoints se llaman correctamente
+  # y que el build de produccion no rompe
+  # -----------------------------------------------------------------------
+  test-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: Ejecutar tests (client.js → contratos de API)
+        working-directory: frontend
+        run: npm test
+
+      - name: Build de produccion
+        working-directory: frontend
+        run: npm run build
