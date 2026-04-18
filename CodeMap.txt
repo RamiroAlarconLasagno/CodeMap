@@ -5,6 +5,37 @@
 [ARCHIVO] __init__.py
 [ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
 ----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] __init__.py
+  [FUNCION] _lenguaje(ruta: Path) -> str | None :: "Devuelve el lenguaje segun la extension, o None si no esta soportada."
+  [FUNCION] _es_valido(ruta: Path, raiz: Path) -> bool :: "Verifica que el archivo sea soportado y no este en carpeta excluida."
+  [FUNCION] _parsear(ruta: Path, raiz: Path) -> ArchivoInfo :: "Dispatcher: envia el archivo al parser correcto segun lenguaje."
+  [FUNCION] construir_indice(carpeta: Path) -> ProjectIndex :: "Recorre la carpeta recursivamente y construye el indice en memoria."
+  [FUNCION] reanalizar(indice: ProjectIndex) -> ProjectIndex :: "Reconstruye el indice completo desde cero. No hace merge."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] python_parser.py
+  [CLASE] _VisitanteLlamadas() :: "Extrae nombres de llamadas unicas en orden de aparicion."
+    [METODO] __init__(self)
+    [METODO] visit_Call(self, node: ast.Call)
+    [METODO] _nombre_llamada(self, nodo) -> Optional[str]
+  [FUNCION] parsear_archivo(ruta: Path, raiz: Path) -> ArchivoInfo :: "Lee un archivo .py y devuelve su ArchivoInfo completo."
+  [FUNCION] _firma_args(args: ast.arguments, omitir_self: bool = False) -> str :: "Construye la lista de argumentos como string."
+  [FUNCION] _arg_con_tipo(arg: ast.arg) -> str :: "Devuelve 'nombre: tipo' o 'nombre' si no tiene tipo."
+  [FUNCION] _firma_funcion(nodo: ast.FunctionDef | ast.AsyncFunctionDef, omitir_self: bool = False) -> str :: "Construye la firma completa: nombre(args) -> retorno."
+  [FUNCION] _firma_clase(nodo: ast.ClassDef) -> str :: "Firma basada en __init__ sin self. Si no hay __init__: NombreClase()."
+  [FUNCION] _clases_base(nodo: ast.ClassDef) -> list[str] :: "Extrae los nombres de las clases base."
+  [FUNCION] _valor_simple(nodo) -> Optional[str] :: "Extrae el valor solo si es un literal simple. No evalua expresiones."
+  [FUNCION] _extraer_llamadas(nodo: ast.AST) -> list[LlamadaInfo]
+  [FUNCION] _extraer_variables_modulo(arbol: ast.Module) -> list[VariableInfo] :: "Extrae variables de nivel modulo (AnnAssign y Assign)."
+  [FUNCION] _extraer_atributos_clase(nodo: ast.ClassDef) -> list[VariableInfo] :: "Extrae atributos de clase: cuerpo directo + self.x en __init__."
+  [FUNCION] _extraer_imports(arbol: ast.Module) -> list[ImportInfo]
+  [FUNCION] _docstring(nodo) -> str :: "Extrae el docstring compactado a una linea."
+  [FUNCION] _decoradores(nodo) -> list[str]
+  [FUNCION] _parsear_metodo(nodo: ast.FunctionDef | ast.AsyncFunctionDef) -> MetodoInfo
+  [FUNCION] _parsear_clase(nodo: ast.ClassDef) -> ClaseInfo
+  [FUNCION] _parsear_funcion(nodo: ast.FunctionDef | ast.AsyncFunctionDef) -> FuncionInfo
+----------------------------------------------------------------------------------------------------
 [CARPETA] core
 [ARCHIVO] filters.py
   [FUNCION] f_libreria(indice: ProjectIndex, nombre_lib: str) -> list[dict] :: "Archivos/funciones/metodos que usan una libreria. Busca en imports Y en llamadas simultaneamente."
@@ -48,6 +79,12 @@
   [FUNCION] set_indice(indice: ProjectIndex) -> None :: "Reemplaza el indice activo."
   [FUNCION] esta_inicializado() -> bool :: "Verifica si el indice fue inicializado, sin lanzar excepcion."
   [FUNCION] _reset() -> None :: "Solo para tests — resetea el estado global."
+----------------------------------------------------------------------------------------------------
+[CARPETA] /
+[ARCHIVO] main.py
+  [FUNCION] _parsear_args() -> argparse.Namespace
+  [FUNCION] _seleccionar_carpeta() -> Path :: "Abre dialogo grafico si no se paso --carpeta."
+  [FUNCION] main() -> None
 ----------------------------------------------------------------------------------------------------
 [CARPETA] shared
 [ARCHIVO] __init__.py
@@ -167,6 +204,43 @@
   [FUNCION] test_indice_no_esta_vacio()
   [FUNCION] test_indice_carpeta_raiz()
   [FUNCION] test_indice_ultimo_analisis()
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_python_parser.py
+  [FUNCION] info() [@pytest.fixture]
+  [FUNCION] test_sin_error(info)
+  [FUNCION] test_lenguaje(info)
+  [FUNCION] test_nombre_archivo(info)
+  [FUNCION] test_imports_detectados(info)
+  [FUNCION] test_import_from(info)
+  [FUNCION] test_import_typing(info)
+  [FUNCION] test_variables_modulo_detectadas(info)
+  [FUNCION] test_variable_con_tipo(info)
+  [FUNCION] test_variable_con_valor(info)
+  [FUNCION] test_variables_scope_modulo(info)
+  [FUNCION] test_clases_detectadas(info)
+  [FUNCION] test_clase_base_sin_herencia(info)
+  [FUNCION] test_clase_hija_herencia(info)
+  [FUNCION] test_clase_multiple_herencia(info)
+  [FUNCION] test_clase_docstring(info)
+  [FUNCION] test_clase_firma(info)
+  [FUNCION] test_atributos_clase_base(info)
+  [FUNCION] test_atributo_de_cuerpo_clase(info)
+  [FUNCION] test_atributo_scope_es_clase(info)
+  [FUNCION] test_metodos_clase_base(info)
+  [FUNCION] test_metodo_async(info)
+  [FUNCION] test_metodo_no_async(info)
+  [FUNCION] test_decoradores(info)
+  [FUNCION] test_decorador_staticmethod(info)
+  [FUNCION] test_metodo_firma_incluye_tipo(info)
+  [FUNCION] test_metodo_docstring(info)
+  [FUNCION] test_funciones_detectadas(info)
+  [FUNCION] test_funcion_async(info)
+  [FUNCION] test_funcion_firma_con_tipos(info)
+  [FUNCION] test_funcion_docstring(info)
+  [FUNCION] test_funcion_sin_tipo_firma(info)
+  [FUNCION] test_syntax_error_capturado(tmp_path)
+  [FUNCION] test_archivo_vacio(tmp_path)
 ----------------------------------------------------------------------------------------------------
 [CARPETA] tests
 [ARCHIVO] test_queries.py
