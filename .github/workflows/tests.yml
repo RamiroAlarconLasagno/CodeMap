@@ -14,7 +14,8 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        # mcp>=1.0.0 requiere Python 3.10+ — 3.9 eliminado
+        python-version: ["3.10", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +32,6 @@ jobs:
       - name: Correr tests
         run: pytest tests/ --tb=short
 
-      - name: Reporte de cobertura (solo Python 3.11)
-        if: matrix.python-version == '3.11'
+      - name: Reporte de cobertura (solo Python 3.13)
+        if: matrix.python-version == '3.13'
         run: pytest tests/ --cov=core --cov=shared --cov-report=term-missing

@@ -221,7 +221,7 @@ Todas con prefijo `codemap_`:
 
 ### Requisitos
 
-- Python 3.9+
+- Python 3.10+ (requerido por `mcp>=1.0.0`)
 - Node.js 18+ (solo para la interfaz web)
 
 ### Backend
