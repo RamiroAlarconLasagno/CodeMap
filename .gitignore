@@ -39,5 +39,6 @@ Thumbs.db
 # proyecto
 docs/llm/
 
-# frontend
+# frontend — dependencias y build (NO ignorar package-lock.json)
 frontend/node_modules/
+frontend/dist/
