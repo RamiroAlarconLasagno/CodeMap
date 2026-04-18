@@ -1,0 +1,184 @@
+[PROYECTO] CodeMap
+[RUTA] C:\Users\Ingra\OneDrive\Escritorio\CodeMap
+====================================================================================================
+[CARPETA] core
+[ARCHIVO] __init__.py
+[ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] index.py
+  [CLASE] LlamadaInfo()
+  [CLASE] VariableInfo()
+  [CLASE] MetodoInfo()
+  [CLASE] ClaseInfo()
+  [CLASE] FuncionInfo()
+  [CLASE] ImportInfo()
+  [CLASE] ArchivoInfo()
+  [CLASE] ProjectIndex()
+    [METODO] esta_vacio(self) -> bool
+    [METODO] total_archivos(self) -> int
+    [METODO] total_clases(self) -> int
+    [METODO] total_funciones(self) -> int
+    [METODO] total_metodos(self) -> int
+    [METODO] total_variables(self) -> int
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] queries.py
+  [FUNCION] q_carpetas(indice: ProjectIndex) -> dict[str, list[str]] :: "Arbol carpeta -> lista de archivos."
+  [FUNCION] q_imports(indice: ProjectIndex, archivo: Optional[str] = None) -> dict[str, list[dict]] :: "Imports por archivo. Sin archivo devuelve todos."
+  [FUNCION] q_clases(indice: ProjectIndex, archivo: Optional[str] = None) -> dict[str, list[dict]] :: "Clases sin metodos. Sin archivo devuelve todas."
+  [FUNCION] q_metodos(indice: ProjectIndex, clase: str) -> Optional[dict] :: "Metodos de una clase especifica por nombre exacto."
+  [FUNCION] q_funciones(indice: ProjectIndex, archivo: Optional[str] = None) -> dict[str, list[dict]] :: "Funciones sueltas. Sin archivo devuelve todas."
+  [FUNCION] q_variables(indice: ProjectIndex, archivo: Optional[str] = None, scope: Optional[str] = None) -> dict[str, list[dict]] :: "Variables de modulo o de clase segun scope. scope: 'modulo'|'clase'|None."
+  [FUNCION] q_llamadas(indice: ProjectIndex, simbolo: str) -> Optional[dict] :: "Llamadas de 'Clase.metodo' o 'funcion_suelta'."
+  [FUNCION] q_usos(indice: ProjectIndex, nombre: str) -> list[dict] :: "Donde aparece un simbolo en llamadas (busqueda parcial)."
+  [FUNCION] q_estado(indice: ProjectIndex) -> dict :: "Totales, carpeta raiz, fecha de analisis, archivos con error."
+  [FUNCION] _filtrar_archivo(indice: ProjectIndex, archivo: Optional[str]) -> dict :: "Devuelve el subconjunto de archivos del indice segun filtro."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] state.py
+  [FUNCION] get_indice() -> ProjectIndex :: "Devuelve el indice activo. Lanza RuntimeError si no fue inicializado."
+  [FUNCION] set_indice(indice: ProjectIndex) -> None :: "Reemplaza el indice activo."
+  [FUNCION] esta_inicializado() -> bool :: "Verifica si el indice fue inicializado, sin lanzar excepcion."
+  [FUNCION] _reset() -> None :: "Solo para tests — resetea el estado global."
+----------------------------------------------------------------------------------------------------
+[CARPETA] shared
+[ARCHIVO] __init__.py
+[ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
+----------------------------------------------------------------------------------------------------
+[CARPETA] shared
+[ARCHIVO] config.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] shared
+[ARCHIVO] formatters.py
+  [FUNCION] exportar_txt(indice: ProjectIndex, nivel: str = 'firmas') -> str :: "Exporta el indice como texto plano. nivel: estructura|firmas|completo."
+  [FUNCION] exportar_md(indice: ProjectIndex, nivel: str = 'firmas') -> str :: "Exporta el indice como Markdown. nivel: estructura|firmas|completo."
+  [FUNCION] _bloque_archivo(info: ArchivoInfo, nivel: str, prefijo: str = '') -> list[str] :: "Genera las lineas de un archivo dado el nivel de detalle."
+  [FUNCION] _validar_nivel(nivel: str) -> None
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] __init__.py
+[ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] conftest.py
+  [FUNCION] indice() -> ProjectIndex [@pytest.fixture] :: "Indice de prueba con dos archivos, clases, metodos, funciones y variables."
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests/fixtures
+[ARCHIVO] sample.py
+  [CLASE] ClaseBase(nombre: str) :: "Clase base de prueba."
+    [METODO] __init__(self, nombre: str)
+    [METODO] metodo_simple(self) -> str :: "Devuelve el nombre."
+    [METODO] nombre_upper(self) -> str [@property]
+    [METODO] metodo_estatico(x: int) -> int [@staticmethod]
+    [METODO] desde_dict(cls, datos: dict) -> 'ClaseBase' [@classmethod]
+  [CLASE] ClaseHija(nombre: str, nivel: int = 0) :: "Clase hija que hereda de ClaseBase."
+    [METODO] __init__(self, nombre: str, nivel: int = 0)
+    [METODO] metodo_override(self) -> str
+    [METODO] async metodo_async(self, items: List[str]) -> List[str] :: "Procesa items de forma asincrona."
+  [CLASE] ClaseMultipleHerencia() :: "Clase con herencia multiple."
+    [METODO] __init__(self)
+  [FUNCION] funcion_simple(x: int, y: int) -> int :: "Suma dos numeros."
+  [FUNCION] funcion_sin_tipo(nombre, valor = None)
+  [FUNCION] async funcion_asincrona(url: str) -> dict :: "Descarga datos de una URL."
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_formatters.py
+  [FUNCION] test_nivel_invalido_txt(indice)
+  [FUNCION] test_nivel_invalido_md(indice)
+  [FUNCION] test_txt_estructura_contiene_clases(indice)
+  [FUNCION] test_txt_estructura_contiene_funciones(indice)
+  [FUNCION] test_txt_estructura_contiene_variables(indice)
+  [FUNCION] test_txt_estructura_no_contiene_firmas(indice)
+  [FUNCION] test_txt_estructura_no_contiene_llamadas(indice)
+  [FUNCION] test_txt_firmas_contiene_firmas(indice)
+  [FUNCION] test_txt_firmas_contiene_docstrings(indice)
+  [FUNCION] test_txt_firmas_no_contiene_llamadas(indice)
+  [FUNCION] test_txt_completo_contiene_llamadas(indice)
+  [FUNCION] test_txt_completo_contiene_todo(indice)
+  [FUNCION] test_md_contiene_headers(indice)
+  [FUNCION] test_md_contiene_resumen(indice)
+  [FUNCION] test_md_marca_archivos_con_error(indice)
+  [FUNCION] test_md_firmas_contiene_firmas(indice)
+  [FUNCION] test_md_completo_contiene_llamadas(indice)
+  [FUNCION] test_txt_devuelve_string(indice)
+  [FUNCION] test_md_devuelve_string(indice)
+  [FUNCION] test_archivos_ordenados_alfabeticamente(indice)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_index.py
+  [FUNCION] _archivo(nombre: str = 'mod.py', lenguaje: str = 'python') -> ArchivoInfo
+  [FUNCION] _indice_vacio() -> ProjectIndex
+  [FUNCION] _indice_con_archivos() -> ProjectIndex
+  [FUNCION] test_llamada_info_crea_correctamente()
+  [FUNCION] test_variable_info_campos()
+  [FUNCION] test_variable_info_tipo_opcional()
+  [FUNCION] test_metodo_info_defaults()
+  [FUNCION] test_metodo_info_completo()
+  [FUNCION] test_clase_info_defaults()
+  [FUNCION] test_clase_info_con_herencia()
+  [FUNCION] test_funcion_info_defaults()
+  [FUNCION] test_import_info_simple()
+  [FUNCION] test_import_info_from()
+  [FUNCION] test_archivo_info_defaults()
+  [FUNCION] test_archivo_info_con_error()
+  [FUNCION] test_indice_vacio()
+  [FUNCION] test_indice_total_archivos()
+  [FUNCION] test_indice_total_clases()
+  [FUNCION] test_indice_total_funciones()
+  [FUNCION] test_indice_total_metodos()
+  [FUNCION] test_indice_total_variables()
+  [FUNCION] test_indice_no_esta_vacio()
+  [FUNCION] test_indice_carpeta_raiz()
+  [FUNCION] test_indice_ultimo_analisis()
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_queries.py
+  [FUNCION] test_carpetas_devuelve_arbol(indice)
+  [FUNCION] test_carpetas_agrupa_por_carpeta(indice)
+  [FUNCION] test_imports_todos(indice)
+  [FUNCION] test_imports_por_archivo(indice)
+  [FUNCION] test_imports_archivo_inexistente(indice)
+  [FUNCION] test_imports_estructura_dict(indice)
+  [FUNCION] test_clases_todas(indice)
+  [FUNCION] test_clases_por_archivo(indice)
+  [FUNCION] test_clases_sin_metodos_en_resultado(indice)
+  [FUNCION] test_clases_incluye_bases(indice)
+  [FUNCION] test_metodos_clase_existente(indice)
+  [FUNCION] test_metodos_incluye_firma_clase(indice)
+  [FUNCION] test_metodos_incluye_llamadas(indice)
+  [FUNCION] test_metodos_async_flag(indice)
+  [FUNCION] test_metodos_clase_inexistente(indice)
+  [FUNCION] test_metodos_incluye_atributos(indice)
+  [FUNCION] test_funciones_todas(indice)
+  [FUNCION] test_funciones_por_archivo(indice)
+  [FUNCION] test_funciones_incluye_llamadas(indice)
+  [FUNCION] test_variables_scope_modulo(indice)
+  [FUNCION] test_variables_scope_clase(indice)
+  [FUNCION] test_variables_sin_scope_devuelve_todas(indice)
+  [FUNCION] test_variables_archivo_sin_variables(indice)
+  [FUNCION] test_llamadas_metodo(indice)
+  [FUNCION] test_llamadas_funcion_suelta(indice)
+  [FUNCION] test_llamadas_simbolo_inexistente(indice)
+  [FUNCION] test_usos_encuentra_simbolo(indice)
+  [FUNCION] test_usos_busqueda_parcial(indice)
+  [FUNCION] test_usos_sin_resultados(indice)
+  [FUNCION] test_usos_estructura_dict(indice)
+  [FUNCION] test_estado_totales(indice)
+  [FUNCION] test_estado_carpeta_raiz(indice)
+  [FUNCION] test_estado_archivos_con_error(indice)
+  [FUNCION] test_estado_ultimo_analisis(indice)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_state.py
+  [FUNCION] reset_state() [@pytest.fixture(autouse=True)]
+  [FUNCION] _indice_prueba() -> ProjectIndex
+  [FUNCION] test_no_inicializado_por_defecto()
+  [FUNCION] test_get_indice_sin_inicializar_lanza_error()
+  [FUNCION] test_set_indice_inicializa()
+  [FUNCION] test_get_indice_devuelve_el_mismo_objeto()
+  [FUNCION] test_set_indice_reemplaza_el_anterior()
+  [FUNCION] test_reset_limpia_el_estado()
+  [FUNCION] test_esta_inicializado_false_despues_de_reset()
+  [FUNCION] test_get_indice_despues_de_reset_lanza_error()
+----------------------------------------------------------------------------------------------------
