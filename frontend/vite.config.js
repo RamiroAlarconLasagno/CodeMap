@@ -29,4 +29,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
+  test: {
+    environment: 'jsdom',  // necesario para vi.stubGlobal('fetch', ...)
+  },
 })
