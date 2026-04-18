@@ -6,6 +6,13 @@
 [ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
 ----------------------------------------------------------------------------------------------------
 [CARPETA] core
+[ARCHIVO] filters.py
+  [FUNCION] f_libreria(indice: ProjectIndex, nombre_lib: str) -> list[dict] :: "Archivos/funciones/metodos que usan una libreria. Busca en imports Y en llamadas simultaneamente."
+  [FUNCION] f_buscar(indice: ProjectIndex, patron: str) -> list[dict] :: "Busca clases, metodos y funciones por nombre. Soporta wildcards * y ?. Sin wildcards: busqueda de subcadena."
+  [FUNCION] f_idioma(indice: ProjectIndex) -> dict :: "Detecta mezcla de idiomas en nombres de funciones y clases. Heuristica por tokens snake_case y CamelCase contra diccionarios es/en."
+  [FUNCION] _tokenizar(nombre: str) -> list[str] :: "Convierte CamelCase y snake_case en lista de tokens en minusculas."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
 [ARCHIVO] index.py
   [CLASE] LlamadaInfo()
   [CLASE] VariableInfo()
@@ -81,6 +88,35 @@
   [FUNCION] funcion_simple(x: int, y: int) -> int :: "Suma dos numeros."
   [FUNCION] funcion_sin_tipo(nombre, valor = None)
   [FUNCION] async funcion_asincrona(url: str) -> dict :: "Descarga datos de una URL."
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_filters.py
+  [FUNCION] test_libreria_encuentra_por_import(indice)
+  [FUNCION] test_libreria_encuentra_por_llamada(indice)
+  [FUNCION] test_libreria_busqueda_parcial(indice)
+  [FUNCION] test_libreria_no_encontrada(indice)
+  [FUNCION] test_libreria_resultado_tiene_campos(indice)
+  [FUNCION] test_libreria_import_simbolo_es_none(indice)
+  [FUNCION] test_libreria_llamada_incluye_simbolo(indice)
+  [FUNCION] test_libreria_case_insensitive(indice)
+  [FUNCION] test_libreria_json_en_metodo(indice)
+  [FUNCION] test_buscar_subcadena(indice)
+  [FUNCION] test_buscar_wildcard_asterisco(indice)
+  [FUNCION] test_buscar_wildcard_interrogacion(indice)
+  [FUNCION] test_buscar_encuentra_metodos(indice)
+  [FUNCION] test_buscar_encuentra_funciones(indice)
+  [FUNCION] test_buscar_encuentra_clases(indice)
+  [FUNCION] test_buscar_sin_resultados(indice)
+  [FUNCION] test_buscar_resultado_tiene_campos(indice)
+  [FUNCION] test_buscar_case_insensitive(indice)
+  [FUNCION] test_buscar_wildcard_todo(indice)
+  [FUNCION] test_idioma_devuelve_estructura(indice)
+  [FUNCION] test_idioma_dominante_es_valido(indice)
+  [FUNCION] test_idioma_conteos_no_negativos(indice)
+  [FUNCION] test_idioma_archivos_mezcla_es_lista(indice)
+  [FUNCION] test_idioma_detecta_espanol() :: "Indice con nombres puramente en espanol."
+  [FUNCION] test_idioma_detecta_ingles() :: "Indice con nombres puramente en ingles."
+  [FUNCION] test_idioma_indice_vacio()
 ----------------------------------------------------------------------------------------------------
 [CARPETA] tests
 [ARCHIVO] test_formatters.py
