@@ -14,6 +14,17 @@
   [FUNCION] reanalizar(indice: ProjectIndex) -> ProjectIndex :: "Reconstruye el indice completo desde cero. No hace merge."
 ----------------------------------------------------------------------------------------------------
 [CARPETA] core/analyzer
+[ARCHIVO] dart_parser.py
+  [FUNCION] parsear_archivo(ruta: Path, raiz: Path) -> ArchivoInfo :: "Lee un archivo .dart y devuelve su ArchivoInfo completo."
+  [FUNCION] _pasada_imports(lineas: list[str], info: ArchivoInfo) -> None :: "Extrae imports Dart sobre el codigo original (no limpiado). Los strings de los imports se eliminarian con limpiar_dart, por eso esta pasada trabaja sobre el texto sin modificar."
+  [FUNCION] _pasada_clases(lineas: list[str], lineas_limpias: list[str], scopes: list[str], info: ArchivoInfo) -> None :: "Detecta clases, mixins y enums; extrae sus metodos y atributos."
+  [FUNCION] _extraer_miembros_clase(nombre_clase: str, lineas: list[str], lineas_limpias: list[str], clase: ClaseInfo) -> None :: "Extrae metodos y atributos del bloque de una clase."
+  [FUNCION] _agregar_llamadas_metodo(linea_inicio: int, lineas: list[str], lineas_limpias: list[str], metodo: MetodoInfo) -> None :: "Extrae las llamadas dentro del cuerpo de un metodo."
+  [FUNCION] _pasada_funciones(lineas: list[str], lineas_limpias: list[str], scopes: list[str], info: ArchivoInfo) -> None :: "Extrae funciones sueltas de nivel modulo."
+  [FUNCION] _pasada_variables(lineas_limpias: list[str], scopes: list[str], info: ArchivoInfo) -> None :: "Extrae variables de nivel modulo (final, const, late, var)."
+  [FUNCION] _firma_clase(linea: str, nombre: str) -> str :: "Extrae la firma de la clase desde la linea de declaracion."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
 [ARCHIVO] python_parser.py
   [CLASE] _VisitanteLlamadas() :: "Extrae nombres de llamadas unicas en orden de aparicion."
     [METODO] __init__(self)
@@ -35,6 +46,15 @@
   [FUNCION] _parsear_metodo(nodo: ast.FunctionDef | ast.AsyncFunctionDef) -> MetodoInfo
   [FUNCION] _parsear_clase(nodo: ast.ClassDef) -> ClaseInfo
   [FUNCION] _parsear_funcion(nodo: ast.FunctionDef | ast.AsyncFunctionDef) -> FuncionInfo
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] regex_base.py
+  [FUNCION] limpiar_dart(codigo: str) -> str :: "Elimina strings y comentarios Dart para evitar falsos positivos en regex. Maneja: '', "", ''', """, comentarios // ///, /* */ Preserva saltos de linea para mantener numeracion de lineas intacta."
+  [FUNCION] limpiar_js_ts(codigo: str) -> str :: "Elimina strings y comentarios JS/TS para evitar falsos positivos en regex. Maneja: '', "", `` (template literals), comentarios // y /* */ Preserva saltos de linea."
+  [FUNCION] limpiar_c_cpp(codigo: str) -> str :: "Elimina strings y comentarios C/C++ para evitar falsos positivos en regex. Maneja: '', "", comentarios // y /* */ Preserva saltos de linea."
+  [FUNCION] mapa_scopes_llaves(lineas: list[str]) -> list[str] :: "Devuelve lista paralela con el scope de cada linea. Valores posibles: 'modulo'           → nivel 0, fuera de cualquier bloque 'clase:Nombre'     → dentro del cuerpo de una clase 'funcion:Nombre'   → dentro de una funcion o metodo 'bloque'           → if, for, while, lambda, etc."
+  [FUNCION] extraer_bloque_llaves(lineas: list[str], linea_inicio: int) -> tuple[int, str] :: "Extrae el texto de un bloque { } balanceado desde linea_inicio. Returns: (linea_fin, texto_completo_del_bloque)"
+  [FUNCION] extraer_llamadas_texto(texto: str, patron: re.Pattern) -> list[LlamadaInfo] :: "Extrae llamadas unicas desde texto ya limpio. Args: texto:  Codigo fuente ya pasado por el limpiador correspondiente. patron: Regex con grupo 1 capturando el nombre de la llamada. Returns: Lista de LlamadaInfo unicas en orden de primera aparicion. Excluye LLAMADAS_EXCLUIDAS y palabras de control de flujo."
 ----------------------------------------------------------------------------------------------------
 [CARPETA] core
 [ARCHIVO] filters.py
@@ -172,6 +192,38 @@
   [FUNCION] funcion_simple(x: int, y: int) -> int :: "Suma dos numeros."
   [FUNCION] funcion_sin_tipo(nombre, valor = None)
   [FUNCION] async funcion_asincrona(url: str) -> dict :: "Descarga datos de una URL."
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_dart_parser.py
+  [FUNCION] info() -> ArchivoInfo [@pytest.fixture(scope='module')] :: "Parsea sample.dart una sola vez para todos los tests del modulo."
+  [FUNCION] test_sin_error(info)
+  [FUNCION] test_lenguaje(info)
+  [FUNCION] test_nombre_archivo(info)
+  [FUNCION] test_imports_detectados(info)
+  [FUNCION] test_import_con_show(info)
+  [FUNCION] test_import_con_alias_registrado(info)
+  [FUNCION] test_clases_detectadas(info)
+  [FUNCION] test_mixin_detectado(info)
+  [FUNCION] test_enum_detectado(info)
+  [FUNCION] test_clase_herencia(info)
+  [FUNCION] test_clase_con_mixin(info)
+  [FUNCION] test_metodos_sensor(info)
+  [FUNCION] test_metodo_async(info)
+  [FUNCION] test_metodo_no_async(info)
+  [FUNCION] test_constructor_detectado(info)
+  [FUNCION] test_constructor_nombrado(info)
+  [FUNCION] test_override_detectado(info)
+  [FUNCION] test_atributos_sensor(info)
+  [FUNCION] test_atributo_scope_clase(info)
+  [FUNCION] test_funciones_detectadas(info)
+  [FUNCION] test_funcion_async(info)
+  [FUNCION] test_funcion_no_async(info)
+  [FUNCION] test_variables_modulo_detectadas(info)
+  [FUNCION] test_variables_scope_modulo(info)
+  [FUNCION] test_llamadas_en_metodo(info)
+  [FUNCION] test_llamadas_unicas(info) :: "Ninguna llamada debe repetirse dentro del mismo metodo."
+  [FUNCION] test_archivo_inexistente(tmp_path)
+  [FUNCION] test_archivo_vacio(tmp_path)
 ----------------------------------------------------------------------------------------------------
 [CARPETA] tests
 [ARCHIVO] test_filters.py
