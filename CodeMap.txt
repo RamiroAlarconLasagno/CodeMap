@@ -586,3 +586,160 @@
   [FUNCION] test_post_carpeta_existente(client, tmp_path)
   [FUNCION] test_post_carpeta_no_existe(client)
 ----------------------------------------------------------------------------------------------------
+
+codemap/
+│
+├── main.py
+├── requirements.txt
+├── .gitignore
+│
+├── core/
+│   ├── __init__.py
+│   ├── index.py
+│   ├── state.py
+│   ├── queries.py
+│   ├── filters.py
+│   │
+│   ├── analyzer/
+│   │   ├── __init__.py
+│   │   ├── regex_base.py
+│   │   ├── python_parser.py
+│   │   ├── dart_parser.py
+│   │   ├── js_parser.py
+│   │   └── c_parser.py
+│   │
+│   └── mcp/
+│       ├── __init__.py
+│       └── server.py
+│
+├── interfaces/
+│   └── web/
+│       ├── __init__.py
+│       ├── server.py
+│       └── routes/
+│           ├── __init__.py
+│           ├── estructura.py
+│           ├── relaciones.py
+│           └── control.py
+│
+├── shared/
+│   ├── __init__.py
+│   ├── config.py
+│   └── formatters.py
+│
+└── frontend/
+    ├── package.json
+    ├── vite.config.js
+    ├── tailwind.config.js
+    ├── index.html
+    └── src/
+        ├── main.jsx
+        ├── App.jsx
+        ├── api/
+        │   └── client.js
+        └── components/
+            ├── TopBar.jsx
+            ├── FilterPanel.jsx
+            ├── FileTree.jsx
+            ├── DetailPanel.jsx
+            └── SearchBar.jsx
+
+
+
+
+CodeMap/
+┣ .github/
+┃ ┗ workflows/
+┃   ┣ ci.yml
+┃   ┗ tests.yml
+┣ core/
+┃ ┣ analyzer/
+┃ ┃ ┣ __pycache__/
+┃ ┃ ┃ ┣ c_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ dart_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ js_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ python_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ regex_base.cpython-312.pyc
+┃ ┃ ┃ ┗ __init__.cpython-312.pyc
+┃ ┃ ┣ c_parser.py
+┃ ┃ ┣ dart_parser.py
+┃ ┃ ┣ js_parser.py
+┃ ┃ ┣ python_parser.py
+┃ ┃ ┣ regex_base.py
+┃ ┃ ┗ __init__.py
+┃ ┣ mcp/
+┃ ┃ ┣ __pycache__/
+┃ ┃ ┃ ┣ server.cpython-312.pyc
+┃ ┃ ┃ ┗ __init__.cpython-312.pyc
+┃ ┃ ┣ server.py
+┃ ┃ ┗ __init__.py
+┃ ┣ __pycache__/
+┃ ┃ ┣ filters.cpython-312.pyc
+┃ ┃ ┣ index.cpython-312.pyc
+┃ ┃ ┣ queries.cpython-312.pyc
+┃ ┃ ┣ state.cpython-312.pyc
+┃ ┃ ┗ __init__.cpython-312.pyc
+┃ ┣ filters.py
+┃ ┣ index.py
+┃ ┣ queries.py
+┃ ┣ state.py
+┃ ┗ __init__.py
+┣ frontend/
+┃ ┣ src/
+┃ ┃ ┣ api/
+┃ ┃ ┃ ┣ client.js
+┃ ┃ ┃ ┗ client.test.js
+┃ ┃ ┣ components/
+┃ ┃ ┃ ┣ DetailPanel.jsx
+┃ ┃ ┃ ┣ FileTree.jsx
+┃ ┃ ┃ ┣ FilterPanel.jsx
+┃ ┃ ┃ ┣ SearchBar.jsx
+┃ ┃ ┃ ┗ TopBar.jsx
+┃ ┃ ┣ App.jsx
+┃ ┃ ┣ index.css
+┃ ┃ ┗ main.jsx
+┃ ┣ index.html
+┃ ┣ package-lock.json
+┃ ┣ package.json
+┃ ┣ postcss.config.js
+┃ ┣ tailwind.config.js
+┃ ┗ vite.config.js
+┣ interfaces/
+┃ ┣ web/
+┃ ┃ ┣ routes/
+┃ ┃ ┃ ┣ control.py
+┃ ┃ ┃ ┣ estructura.py
+┃ ┃ ┃ ┣ relaciones.py
+┃ ┃ ┃ ┗ __init__.py
+┃ ┃ ┣ server.py
+┃ ┃ ┗ __init__.py
+┃ ┗ __init__.py
+┣ shared/
+┃ ┣ config.py
+┃ ┣ formatters.py
+┃ ┗ __init__.py
+┣ tests/
+┃ ┣ fixtures/
+┃ ┃ ┣ sample.cpp
+┃ ┃ ┣ sample.dart
+┃ ┃ ┣ sample.js
+┃ ┃ ┗ sample.py
+┃ ┣ conftest.py
+┃ ┣ test_c_parser.py
+┃ ┣ test_dart_parser.py
+┃ ┣ test_filters.py
+┃ ┣ test_formatters.py
+┃ ┣ test_index.py
+┃ ┣ test_js_parser.py
+┃ ┣ test_mcp.py
+┃ ┣ test_python_parser.py
+┃ ┣ test_queries.py
+┃ ┣ test_state.py
+┃ ┣ test_web.py
+┃ ┗ __init__.py
+┣ .gitignore
+┣ CodeMap.txt
+┣ main.py
+┣ pyproject.toml
+┣ README.md
+┗ requirements.txt
