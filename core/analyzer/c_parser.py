@@ -327,8 +327,8 @@ def _pasada_variables(
 def parsear_archivo(ruta: Path, raiz: Path, lenguaje: str) -> ArchivoInfo:
     """Lee un archivo C/C++ y devuelve su ArchivoInfo completo."""
     info = ArchivoInfo(
-        ruta_relativa=str(ruta.relative_to(raiz)),
-        carpeta=str(ruta.parent.relative_to(raiz)),
+        ruta_relativa=ruta.relative_to(raiz).as_posix(),
+        carpeta=ruta.parent.relative_to(raiz).as_posix(),
         nombre=ruta.name,
         lenguaje=lenguaje,
     )

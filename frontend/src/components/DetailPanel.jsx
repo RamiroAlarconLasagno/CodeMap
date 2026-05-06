@@ -54,7 +54,7 @@ function Bloque({ label, children }) {
 // Panel para CLASE
 // ---------------------------------------------------------------------------
 
-function DetalleClase({ item }) {
+function DetalleClase({ item, filtros }) {
   const [metodos,  setMetodos]  = useState([])
   const [cargando, setCargando] = useState(false)
 
@@ -80,7 +80,7 @@ function DetalleClase({ item }) {
         </Bloque>
       )}
 
-      {item.clases_base?.length > 0 && (
+      {filtros?.clases_base && item.clases_base?.length > 0 && (
         <Bloque label="hereda de">
           <div className="flex flex-wrap gap-1.5">
             {item.clases_base.map(b => (
@@ -120,7 +120,7 @@ function DetalleClase({ item }) {
 // Panel para METODO o FUNCION
 // ---------------------------------------------------------------------------
 
-function DetalleSimbolo({ item }) {
+function DetalleSimbolo({ item, filtros }) {
   const [llamadas, setLlamadas] = useState(item.llamadas ?? [])
 
   // Si el item viene del tree con llamadas ya cargadas no hace fetch extra
@@ -152,7 +152,7 @@ function DetalleSimbolo({ item }) {
         </Bloque>
       )}
 
-      {llamadas.length > 0 && (
+      {filtros?.llamadas && llamadas.length > 0 && (
         <Bloque label="llamadas">
           <div className="flex flex-col gap-1">
             {llamadas.map(l => (
@@ -198,7 +198,7 @@ function DetalleVariable({ item }) {
 // DetailPanel — raiz
 // ---------------------------------------------------------------------------
 
-export default function DetailPanel({ seleccionado, onNavegar }) {
+export default function DetailPanel({ seleccionado, onNavegar, filtros }) {
   if (!seleccionado) {
     return (
       <div className="bg-[#0f1117] border-l border-gray-800 flex flex-col
@@ -234,9 +234,9 @@ export default function DetailPanel({ seleccionado, onNavegar }) {
 
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto">
-        {tipo === 'clase'    && <DetalleClase    item={seleccionado} />}
-        {tipo === 'metodo'   && <DetalleSimbolo  item={seleccionado} />}
-        {tipo === 'funcion'  && <DetalleSimbolo  item={seleccionado} />}
+        {tipo === 'clase'    && <DetalleClase    item={seleccionado} filtros={filtros} />}
+        {tipo === 'metodo'   && <DetalleSimbolo  item={seleccionado} filtros={filtros} />}
+        {tipo === 'funcion'  && <DetalleSimbolo  item={seleccionado} filtros={filtros} />}
         {tipo === 'variable' && <DetalleVariable item={seleccionado} />}
       </div>
 

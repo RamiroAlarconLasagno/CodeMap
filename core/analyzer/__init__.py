@@ -63,10 +63,10 @@ def construir_indice(carpeta: Path) -> ProjectIndex:
             info = _parsear(ruta, carpeta)
             archivos[info.ruta_relativa] = info
         except Exception as e:
-            ruta_rel = str(ruta.relative_to(carpeta))
+            ruta_rel = ruta.relative_to(carpeta).as_posix()
             archivos[ruta_rel] = ArchivoInfo(
                 ruta_relativa=ruta_rel,
-                carpeta=str(ruta.parent.relative_to(carpeta)),
+                carpeta=ruta.parent.relative_to(carpeta).as_posix(),
                 nombre=ruta.name,
                 lenguaje=_lenguaje(ruta) or "desconocido",
                 error=str(e),

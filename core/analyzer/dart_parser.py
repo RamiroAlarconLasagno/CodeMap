@@ -121,8 +121,8 @@ _PALABRAS_CLAVE = frozenset({
 def parsear_archivo(ruta: Path, raiz: Path) -> ArchivoInfo:
     """Lee un archivo .dart y devuelve su ArchivoInfo completo."""
     info = ArchivoInfo(
-        ruta_relativa=str(ruta.relative_to(raiz)),
-        carpeta=str(ruta.parent.relative_to(raiz)),
+        ruta_relativa=ruta.relative_to(raiz).as_posix(),
+        carpeta=ruta.parent.relative_to(raiz).as_posix(),
         nombre=ruta.name,
         lenguaje="dart",
     )

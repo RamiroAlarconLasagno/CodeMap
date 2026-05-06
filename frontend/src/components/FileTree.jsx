@@ -1,6 +1,6 @@
 // frontend/src/components/FileTree.jsx
 import { useState, useEffect } from 'react'
-import { getClases, getFunciones, getVariables } from '../api/client.js'
+import { getClases, getFunciones, getVariables, getImports } from '../api/client.js'
 
 // ---------------------------------------------------------------------------
 // Badges de tipo
@@ -74,6 +74,7 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
   const [clases,    setClases]    = useState([])
   const [funciones, setFunciones] = useState([])
   const [variables, setVariables] = useState([])
+  const [imports,   setImports]   = useState([])
   const [cargando,  setCargando]  = useState(false)
 
   // Nombre corto para mostrar en el header
@@ -86,15 +87,17 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
     async function cargar() {
       setCargando(true)
       try {
-        const [resClases, resFunciones, resVars] = await Promise.all([
+        const [resClases, resFunciones, resVars, resImports] = await Promise.all([
           getClases(rutaArchivo),
           getFunciones(rutaArchivo),
           filtros.variables ? getVariables(rutaArchivo, 'modulo') : Promise.resolve({}),
+          filtros.imports   ? getImports(rutaArchivo)             : Promise.resolve({}),
         ])
         if (cancelado) return
-        setClases(resClases[rutaArchivo]    ?? [])
+        setClases(resClases[rutaArchivo]     ?? [])
         setFunciones(resFunciones[rutaArchivo] ?? [])
-        setVariables(resVars[rutaArchivo]   ?? [])
+        setVariables(resVars[rutaArchivo]    ?? [])
+        setImports(resImports[rutaArchivo]   ?? [])
       } catch {
         // Archivo sin simbolos indexados — normal para algunos archivos
       } finally {
@@ -103,9 +106,9 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
     }
     cargar()
     return () => { cancelado = true }
-  }, [rutaArchivo, filtros.variables])
+  }, [rutaArchivo, filtros.variables, filtros.imports])
 
-  const totalSimbolos = clases.length + funciones.length + variables.length
+  const totalSimbolos = clases.length + funciones.length + variables.length + imports.length
 
   return (
     <div className="mb-1">
@@ -191,6 +194,23 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
               })}
             />
           ))}
+
+          {/* Imports */}
+          {filtros.imports && imports.map((imp, i) => {
+            const etiqueta = imp.es_from
+              ? `from ${imp.modulo} import ${imp.nombres.join(', ')}`
+              : `import ${imp.modulo}`
+            return (
+              <div key={i}
+                   className="flex items-center gap-2 px-3 py-1 mx-1">
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded border shrink-0
+                                 bg-gray-800 text-gray-500 border-gray-600 leading-none">
+                  IMP
+                </span>
+                <span className="text-[11px] text-gray-500 font-mono truncate">{etiqueta}</span>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 // frontend/src/components/TopBar.jsx
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { getExportar } from '../api/client'
 
 // Formatea la fecha ISO del backend a algo legible
 function _formatearFecha(iso) {
@@ -14,9 +15,44 @@ function _formatearFecha(iso) {
   }
 }
 
-export default function TopBar({ estado, cargando, onReanalizar, onCambiarCarpeta }) {
+const NIVELES = [
+  { id: 'estructura', label: 'Estructura' },
+  { id: 'firmas',     label: 'Firmas' },
+  { id: 'completo',   label: 'Completo' },
+]
+
+export default function TopBar({ estado, cargando, onReanalizar, onCambiarCarpeta, archivosActivos, filtros }) {
   const [editandoRuta, setEditandoRuta] = useState(false)
   const [inputRuta, setInputRuta] = useState('')
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  const [exportando, setExportando] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!menuAbierto) return
+    function cerrar(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuAbierto(false)
+    }
+    document.addEventListener('mousedown', cerrar)
+    return () => document.removeEventListener('mousedown', cerrar)
+  }, [menuAbierto])
+
+  async function _exportar(nivel) {
+    setMenuAbierto(false)
+    setExportando(true)
+    try {
+      const texto = await getExportar(nivel, archivosActivos, filtros)
+      const blob = new Blob([texto], { type: 'text/markdown; charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `codemap-${nivel}.md`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExportando(false)
+    }
+  }
 
   function _confirmarRuta(e) {
     e.preventDefault()
@@ -107,6 +143,34 @@ export default function TopBar({ estado, cargando, onReanalizar, onCambiarCarpet
           ⚠ {estado.archivos_con_error.length} error{estado.archivos_con_error.length > 1 ? 'es' : ''}
         </span>
       )}
+
+      {/* Botón exportar */}
+      <div className="relative shrink-0" ref={menuRef}>
+        <button
+          onClick={() => setMenuAbierto(v => !v)}
+          disabled={exportando || !estado}
+          className="text-[11px] px-3 py-1.5 rounded border border-gray-700
+                     bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-gray-100
+                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {exportando ? 'exportando…' : '↓ exportar'}
+        </button>
+        {menuAbierto && (
+          <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a1d27] border border-gray-700
+                          rounded shadow-lg min-w-[130px] py-1">
+            {NIVELES.map(n => (
+              <button
+                key={n.id}
+                onClick={() => _exportar(n.id)}
+                className="w-full text-left text-[11px] px-3 py-1.5 text-gray-300
+                           hover:bg-gray-700 hover:text-gray-100 transition-colors"
+              >
+                {n.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Botón reanalizar */}
       <button

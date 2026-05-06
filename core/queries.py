@@ -8,11 +8,12 @@ from core.index import ProjectIndex
 
 
 def q_carpetas(indice: ProjectIndex) -> dict[str, list[str]]:
-    """Arbol carpeta -> lista de archivos."""
+    """Arbol carpeta -> lista de rutas relativas completas (siempre con /)."""
     resultado: dict[str, list[str]] = {}
     for ruta, info in indice.archivos.items():
-        carpeta = info.carpeta or "."
-        resultado.setdefault(carpeta, []).append(info.nombre)
+        carpeta = (info.carpeta or ".").replace("\\", "/")
+        ruta_norm = ruta.replace("\\", "/")
+        resultado.setdefault(carpeta, []).append(ruta_norm)
     return resultado
 
 

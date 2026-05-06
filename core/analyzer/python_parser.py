@@ -24,8 +24,8 @@ from shared.config import LLAMADAS_EXCLUIDAS
 
 def parsear_archivo(ruta: Path, raiz: Path) -> ArchivoInfo:
     """Lee un archivo .py y devuelve su ArchivoInfo completo."""
-    ruta_rel = str(ruta.relative_to(raiz))
-    carpeta = str(ruta.parent.relative_to(raiz)) if ruta.parent != raiz else "."
+    ruta_rel = ruta.relative_to(raiz).as_posix()
+    carpeta = ruta.parent.relative_to(raiz).as_posix() if ruta.parent != raiz else "."
 
     try:
         codigo = ruta.read_text(encoding="utf-8", errors="replace")

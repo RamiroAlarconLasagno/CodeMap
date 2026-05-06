@@ -99,9 +99,18 @@ export function postReanalizar() {
   return _post('/reanalizar')
 }
 
-/** nivel: 'estructura' | 'firmas' | 'completo' — devuelve texto plano */
-export function getExportar(nivel = 'firmas') {
-  return _getText(`/exportar/${encodeURIComponent(nivel)}`)
+/** nivel: 'estructura' | 'firmas' | 'completo' — devuelve texto plano.
+ *  archivos: lista de rutas a incluir (null = todos).
+ *  filtros: { firmas, docstrings, llamadas, imports, clases_base, variables }
+ */
+export async function getExportar(nivel = 'firmas', archivos = null, filtros = null) {
+  const res = await fetch(`${BASE_URL}/exportar/${encodeURIComponent(nivel)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ archivos, filtros }),
+  })
+  if (!res.ok) throw new Error(`POST /exportar/${nivel} → ${res.status}`)
+  return res.text()
 }
 
 /** ruta: string con la ruta absoluta de la nueva carpeta */

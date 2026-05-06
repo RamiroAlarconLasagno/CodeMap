@@ -1,15 +1,15 @@
 // frontend/src/App.jsx
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   getEstado, getCarpetas, getBuscar, getLibreria,
   postReanalizar, postCarpeta,
 } from './api/client.js'
 
-// Componentes — se implementan en commits posteriores, placeholders por ahora
 import TopBar      from './components/TopBar.jsx'
 import FilterPanel from './components/FilterPanel.jsx'
 import FileTree    from './components/FileTree.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
+import ScopePanel  from './components/ScopePanel.jsx'
 
 // ---------------------------------------------------------------------------
 // Estado inicial
@@ -30,15 +30,35 @@ const FILTROS_INICIALES = {
 
 export default function App() {
   // -- estado global --------------------------------------------------------
-  const [estado,       setEstado]       = useState(null)
-  const [archivos,     setArchivos]     = useState({})
-  const [seleccionado, setSeleccionado] = useState(null)
-  const [filtros,      setFiltros]      = useState(FILTROS_INICIALES)
-  const [vista,        setVista]        = useState('estructura')
-  const [librerias,    setLibrerias]    = useState([])
-  const [busqueda,     setBusqueda]     = useState('')
-  const [cargando,     setCargando]     = useState(false)
-  const [error,        setError]        = useState(null)
+  const [estado,            setEstado]            = useState(null)
+  const [archivos,          setArchivos]          = useState({})
+  const [archivosCompletos, setArchivosCompletos] = useState({})
+  const [archivosExcluidos, setArchivosExcluidos] = useState(new Set())
+  const [tabCentral,        setTabCentral]        = useState('estructura')
+  const [seleccionado,      setSeleccionado]      = useState(null)
+  const [filtros,           setFiltros]           = useState(FILTROS_INICIALES)
+  const [vista,             setVista]             = useState('estructura')
+  const [librerias,         setLibrerias]         = useState([])
+  const [busqueda,          setBusqueda]          = useState('')
+  const [cargando,          setCargando]          = useState(false)
+  const [error,             setError]             = useState(null)
+
+  // archivos visibles en FileTree = filtro actual (librería/búsqueda) ∩ scope
+  const archivosVisibles = useMemo(() => {
+    if (!archivosExcluidos.size) return archivos
+    const result = {}
+    for (const [carpeta, rutas] of Object.entries(archivos)) {
+      const filtradas = rutas.filter(r => !archivosExcluidos.has(r))
+      if (filtradas.length) result[carpeta] = filtradas
+    }
+    return result
+  }, [archivos, archivosExcluidos])
+
+  // lista plana para el export (usa árbol completo ∩ scope, sin filtro búsqueda/lib)
+  const archivosActivos = useMemo(() => {
+    if (!archivosExcluidos.size) return null  // null = backend exporta todo
+    return Object.values(archivosCompletos).flat().filter(r => !archivosExcluidos.has(r))
+  }, [archivosCompletos, archivosExcluidos])
 
   // -- carga inicial --------------------------------------------------------
   useEffect(() => {
@@ -54,6 +74,8 @@ export default function App() {
       if (est.total_archivos > 0) {
         const arbol = await getCarpetas()
         setArchivos(arbol)
+        setArchivosCompletos(arbol)
+        setArchivosExcluidos(new Set())
       }
     } catch (e) {
       setError('No se pudo conectar con el backend.')
@@ -72,6 +94,8 @@ export default function App() {
       setEstado(est)
       const arbol = await getCarpetas()
       setArchivos(arbol)
+      setArchivosCompletos(arbol)
+      setArchivosExcluidos(new Set())
       setSeleccionado(null)
     } catch (e) {
       setError('Error al reanalizar.')
@@ -89,6 +113,8 @@ export default function App() {
       setEstado(est)
       const arbol = await getCarpetas()
       setArchivos(arbol)
+      setArchivosCompletos(arbol)
+      setArchivosExcluidos(new Set())
       setSeleccionado(null)
       setBusqueda('')
       setLibrerias([])
@@ -140,6 +166,35 @@ export default function App() {
       setCargando(false)
     }
   }, [])
+
+  const handleToggleArchivo = useCallback((ruta) => {
+    setArchivosExcluidos(prev => {
+      const next = new Set(prev)
+      if (next.has(ruta)) next.delete(ruta)
+      else next.add(ruta)
+      return next
+    })
+  }, [])
+
+  const handleToggleCarpeta = useCallback((carpeta, incluir) => {
+    setArchivosExcluidos(prev => {
+      const rutas = archivosCompletos[carpeta] ?? []
+      const next = new Set(prev)
+      for (const ruta of rutas) {
+        if (incluir) next.delete(ruta)
+        else next.add(ruta)
+      }
+      return next
+    })
+  }, [archivosCompletos])
+
+  const handleToggleTodo = useCallback((incluir) => {
+    if (incluir) {
+      setArchivosExcluidos(new Set())
+    } else {
+      setArchivosExcluidos(new Set(Object.values(archivosCompletos).flat()))
+    }
+  }, [archivosCompletos])
 
   const handleLibreriaAdd = useCallback(async (nombre) => {
     if (!nombre || librerias.includes(nombre)) return
@@ -197,6 +252,8 @@ export default function App() {
           cargando={cargando}
           onReanalizar={handleReanalizar}
           onCambiarCarpeta={handleCambiarCarpeta}
+          archivosActivos={archivosActivos}
+          filtros={filtros}
         />
       </div>
 
@@ -213,20 +270,53 @@ export default function App() {
         onBuscar={handleBuscar}
       />
 
-      {/* FileTree — columna central */}
-      <FileTree
-        archivos={archivos}
-        filtros={filtros}
-        seleccionado={seleccionado}
-        onSeleccionar={handleSeleccionar}
-        cargando={cargando}
-        error={error}
-      />
+      {/* Panel central con pestañas */}
+      <div className="flex flex-col overflow-hidden">
+        {/* Tab bar */}
+        <div className="flex border-b border-gray-800 bg-[#0f1117] px-2 gap-0.5 pt-1.5 shrink-0">
+          {[
+            { id: 'estructura', label: 'código' },
+            { id: 'alcance',    label: `alcance${archivosExcluidos.size ? ` (${archivosExcluidos.size})` : ''}` },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setTabCentral(tab.id)}
+              className={`text-[11px] px-3 py-1 rounded-t border-b-2 transition-colors font-mono
+                ${tabCentral === tab.id
+                  ? 'border-[#1D9E75] text-[#1D9E75] bg-gray-900/50'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Contenido */}
+        {tabCentral === 'estructura' ? (
+          <FileTree
+            archivos={archivosVisibles}
+            filtros={filtros}
+            seleccionado={seleccionado}
+            onSeleccionar={handleSeleccionar}
+            cargando={cargando}
+            error={error}
+          />
+        ) : (
+          <ScopePanel
+            archivos={archivosCompletos}
+            excluidos={archivosExcluidos}
+            onToggleArchivo={handleToggleArchivo}
+            onToggleCarpeta={handleToggleCarpeta}
+            onToggleTodo={handleToggleTodo}
+          />
+        )}
+      </div>
 
       {/* DetailPanel — columna derecha */}
       <DetailPanel
         seleccionado={seleccionado}
         onNavegar={handleSeleccionar}
+        filtros={filtros}
       />
 
     </div>
