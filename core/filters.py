@@ -100,7 +100,8 @@ def f_libreria(indice: ProjectIndex, nombre_lib: str) -> list[dict]:
 
 
 def f_buscar(indice: ProjectIndex, patron: str) -> list[dict]:
-    """Busca clases, metodos y funciones por nombre.
+    """Busca clases, metodos y funciones por nombre (categoria='definicion')
+    y tambien los simbolos que los invocan (categoria='uso').
     Soporta wildcards * y ?. Sin wildcards: busqueda de subcadena.
     """
     tiene_wildcards = "*" in patron or "?" in patron
@@ -112,7 +113,7 @@ def f_buscar(indice: ProjectIndex, patron: str) -> list[dict]:
         return patron.lower() in nombre.lower()
 
     for ruta, info in indice.archivos.items():
-        # Clases
+        # --- Definiciones ---
         for clase in info.clases:
             if coincide(clase.nombre):
                 resultados.append({
@@ -121,8 +122,8 @@ def f_buscar(indice: ProjectIndex, patron: str) -> list[dict]:
                     "nombre": clase.nombre,
                     "firma": clase.firma,
                     "linea": clase.linea,
+                    "categoria": "definicion",
                 })
-            # Metodos de la clase
             for metodo in clase.metodos:
                 if coincide(metodo.nombre):
                     resultados.append({
@@ -131,9 +132,9 @@ def f_buscar(indice: ProjectIndex, patron: str) -> list[dict]:
                         "nombre": f"{clase.nombre}.{metodo.nombre}",
                         "firma": metodo.firma,
                         "linea": metodo.linea,
+                        "categoria": "definicion",
                     })
 
-        # Funciones sueltas
         for funcion in info.funciones:
             if coincide(funcion.nombre):
                 resultados.append({
@@ -142,6 +143,35 @@ def f_buscar(indice: ProjectIndex, patron: str) -> list[dict]:
                     "nombre": funcion.nombre,
                     "firma": funcion.firma,
                     "linea": funcion.linea,
+                    "categoria": "definicion",
+                })
+
+        # --- Usos: simbolos que invocan algo que coincide con el patron ---
+        for clase in info.clases:
+            for metodo in clase.metodos:
+                match = [l.nombre for l in metodo.llamadas if coincide(l.nombre)]
+                if match:
+                    resultados.append({
+                        "archivo": ruta,
+                        "tipo": "metodo",
+                        "nombre": f"{clase.nombre}.{metodo.nombre}",
+                        "firma": metodo.firma,
+                        "linea": metodo.linea,
+                        "categoria": "uso",
+                        "llama_a": match,
+                    })
+
+        for funcion in info.funciones:
+            match = [l.nombre for l in funcion.llamadas if coincide(l.nombre)]
+            if match:
+                resultados.append({
+                    "archivo": ruta,
+                    "tipo": "funcion",
+                    "nombre": funcion.nombre,
+                    "firma": funcion.firma,
+                    "linea": funcion.linea,
+                    "categoria": "uso",
+                    "llama_a": match,
                 })
 
     return resultados

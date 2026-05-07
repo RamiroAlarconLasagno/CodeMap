@@ -2,14 +2,27 @@
 import { useState } from 'react'
 import SearchBar from './SearchBar.jsx'
 
-// Definicion de filtros con etiqueta visible
-const FILTROS = [
-  { campo: 'firmas',      label: 'firmas' },
-  { campo: 'docstrings',  label: 'docstrings' },
-  { campo: 'llamadas',    label: 'llamadas' },
-  { campo: 'imports',     label: 'imports' },
-  { campo: 'clases_base', label: 'clases base' },
-  { campo: 'variables',   label: 'variables' },
+const GRUPOS_FILTROS = [
+  {
+    grupo: 'tipos',
+    items: [
+      { campo: 'clases',    label: 'clases' },
+      { campo: 'metodos',   label: 'métodos' },
+      { campo: 'funciones', label: 'funciones' },
+      { campo: 'clases_base', label: 'clases base' },
+    ],
+  },
+  {
+    grupo: 'detalle',
+    items: [
+      { campo: 'firmas',             label: 'firmas' },
+      { campo: 'docstrings',         label: 'docstrings' },
+      { campo: 'llamadas',           label: 'llamadas' },
+      { campo: 'imports',            label: 'imports' },
+      { campo: 'variables_globales', label: 'var. módulo' },
+      { campo: 'variables_clase',    label: 'var. clase' },
+    ],
+  },
 ]
 
 const VISTAS = [
@@ -73,29 +86,42 @@ export default function FilterPanel({
       </div>
 
       {/* Filtros de detalle */}
-      <div className="p-3 border-b border-gray-800">
+      <div className="p-3 border-b border-gray-800 overflow-y-auto">
         <SeccionLabel>mostrar</SeccionLabel>
-        <div className="flex flex-col gap-1.5">
-          {FILTROS.map(({ campo, label }) => (
-            <label
-              key={campo}
-              className="flex items-center gap-2.5 cursor-pointer group"
-              onClick={() => onFiltroChange(campo)}
-            >
-              {/* checkbox custom */}
-              <span className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center
-                                justify-center text-[9px] transition-colors
-                ${filtros[campo]
-                  ? 'bg-[#1D9E75] border-[#1D9E75] text-white'
-                  : 'bg-gray-800 border-gray-600 group-hover:border-gray-400'
-                }`}>
-                {filtros[campo] ? '✓' : ''}
-              </span>
-              <span className="text-[12px] text-gray-300 group-hover:text-gray-100
-                               transition-colors">
-                {label}
-              </span>
-            </label>
+        <div className="flex flex-col">
+          {GRUPOS_FILTROS.map(({ grupo, items }, gi) => (
+            <div key={grupo}>
+              {/* Separador entre grupos */}
+              {gi > 0 && (
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 border-t border-gray-800" />
+                </div>
+              )}
+
+              {/* Items del grupo */}
+              <div className="flex flex-col gap-1.5">
+                {items.map(({ campo, label }) => (
+                  <label
+                    key={campo}
+                    className="flex items-center gap-2.5 cursor-pointer group"
+                    onClick={() => onFiltroChange(campo)}
+                  >
+                    <span className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center
+                                      justify-center text-[9px] transition-colors
+                      ${filtros[campo]
+                        ? 'bg-[#1D9E75] border-[#1D9E75] text-white'
+                        : 'bg-gray-800 border-gray-600 group-hover:border-gray-400'
+                      }`}>
+                      {filtros[campo] ? '✓' : ''}
+                    </span>
+                    <span className="text-[12px] text-gray-300 group-hover:text-gray-100
+                                     transition-colors">
+                      {label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

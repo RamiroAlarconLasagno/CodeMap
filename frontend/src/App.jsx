@@ -11,18 +11,23 @@ import FileTree    from './components/FileTree.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
 import ScopePanel      from './components/ScopePanel.jsx'
 import RelacionesPanel from './components/RelacionesPanel.jsx'
+import BusquedaPanel  from './components/BusquedaPanel.jsx'
 
 // ---------------------------------------------------------------------------
 // Estado inicial
 // ---------------------------------------------------------------------------
 
 const FILTROS_INICIALES = {
-  firmas:      true,
-  docstrings:  true,
-  llamadas:    false,
-  imports:     false,
-  clases_base: true,
-  variables:   false,
+  clases:             true,
+  metodos:            true,
+  funciones:          true,
+  firmas:             true,
+  docstrings:         true,
+  llamadas:           false,
+  imports:            false,
+  clases_base:        true,
+  variables_globales: false,
+  variables_clase:    false,
 }
 
 // ---------------------------------------------------------------------------
@@ -41,6 +46,7 @@ export default function App() {
   const [vista,             setVista]             = useState('estructura')
   const [librerias,         setLibrerias]         = useState([])
   const [busqueda,          setBusqueda]          = useState('')
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([])
   const [cargando,          setCargando]          = useState(false)
   const [error,             setError]             = useState(null)
 
@@ -132,9 +138,13 @@ export default function App() {
 
   const handleVistaChange = useCallback((nuevaVista) => {
     setVista(nuevaVista)
-    setBusqueda('')
     setSeleccionado(null)
-  }, [])
+    if (nuevaVista !== 'busqueda') {
+      setBusqueda('')
+      setResultadosBusqueda([])
+      setArchivos(archivosCompletos)
+    }
+  }, [archivosCompletos])
 
   const handleSeleccionar = useCallback((item) => {
     setSeleccionado(item)
@@ -143,30 +153,22 @@ export default function App() {
   const handleBuscar = useCallback(async (patron) => {
     setBusqueda(patron)
     if (!patron.trim()) {
-      const arbol = await getCarpetas()
-      setArchivos(arbol)
+      setResultadosBusqueda([])
+      setArchivos(archivosCompletos)
+      setVista('estructura')
       return
     }
+    setVista('busqueda')
     setCargando(true)
     try {
       const resultados = await getBuscar(patron)
-      // Agrupar resultados por carpeta para que FileTree los pueda renderizar
-      const agrupado = {}
-      for (const item of resultados) {
-        const partes = (item.archivo || '').split('/')
-        const carpeta = partes.slice(0, -1).join('/') || '.'
-        if (!agrupado[carpeta]) agrupado[carpeta] = []
-        if (!agrupado[carpeta].includes(item.archivo)) {
-          agrupado[carpeta].push(item.archivo)
-        }
-      }
-      setArchivos(agrupado)
+      setResultadosBusqueda(resultados)
     } catch (e) {
       setError('Error en la busqueda.')
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [archivosCompletos])
 
   const handleToggleArchivo = useCallback((ruta) => {
     setArchivosExcluidos(prev => {
@@ -303,6 +305,12 @@ export default function App() {
           />
         ) : vista === 'relaciones' ? (
           <RelacionesPanel librerias={librerias} />
+        ) : vista === 'busqueda' ? (
+          <BusquedaPanel
+            resultados={resultadosBusqueda}
+            patron={busqueda}
+            onSeleccionar={handleSeleccionar}
+          />
         ) : (
           <FileTree
             archivos={archivosVisibles}

@@ -39,7 +39,7 @@ function FilaSimbol({ tipo, nombre, firma, docstring, esAsync, seleccionado, onC
                     : 'hover:bg-gray-800/60 border border-transparent'}`}
     >
       <Badge tipo={tipo} />
-      <div className="min-w-0">
+      <div className="min-w-0 select-text">
         <div className="flex items-center gap-1.5">
           {esAsync && (
             <span className="text-[9px] text-purple-400 border border-purple-800
@@ -61,6 +61,19 @@ function FilaSimbol({ tipo, nombre, firma, docstring, esAsync, seleccionado, onC
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Sub-ítem de llamada (indentado bajo método o función)
+// ---------------------------------------------------------------------------
+
+function FilaLlamada({ nombre, extra }) {
+  return (
+    <div className={`flex items-center gap-1.5 py-0.5 mx-1 ${extra ?? 'pl-8'}`}>
+      <span className="text-[10px] text-[#1D9E75]/50 shrink-0">→</span>
+      <span className="text-[11px] text-gray-600 font-mono truncate select-text">{nombre}</span>
     </div>
   )
 }
@@ -90,7 +103,7 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
         const [resClases, resFunciones, resVars, resImports] = await Promise.all([
           getClases(rutaArchivo),
           getFunciones(rutaArchivo),
-          filtros.variables ? getVariables(rutaArchivo, 'modulo') : Promise.resolve({}),
+          filtros.variables_globales ? getVariables(rutaArchivo, 'modulo') : Promise.resolve({}),
           filtros.imports   ? getImports(rutaArchivo)             : Promise.resolve({}),
         ])
         if (cancelado) return
@@ -106,9 +119,12 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
     }
     cargar()
     return () => { cancelado = true }
-  }, [rutaArchivo, filtros.variables, filtros.imports])
+  }, [rutaArchivo, filtros.variables_globales, filtros.imports])
 
-  const totalSimbolos = clases.length + funciones.length + variables.length + imports.length
+  const totalSimbolos = (filtros.clases    ? clases.length    : 0)
+                      + (filtros.funciones ? funciones.length : 0)
+                      + variables.length
+                      + imports.length
 
   return (
     <div className="mb-1">
@@ -137,7 +153,7 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
       {abierto && (
         <div className="ml-2">
           {/* Clases */}
-          {clases.map(cls => (
+          {filtros.clases && clases.map(cls => (
             <div key={cls.nombre}>
               <FilaSimbol
                 tipo="clase"
@@ -150,8 +166,15 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
                   archivo: rutaArchivo, ...cls,
                 })}
               />
-              {/* Metodos de la clase si filtros.firmas activo */}
-              {filtros.firmas && cls.total_metodos > 0 && (
+              {filtros.clases_base && cls.clases_base?.length > 0 && (
+                <div className="flex items-center gap-1.5 py-0.5 mx-1 pl-8 mb-0.5">
+                  <span className="text-[10px] text-blue-600/70 font-mono truncate select-text">
+                    ← {cls.clases_base.join(', ')}
+                  </span>
+                </div>
+              )}
+              {((filtros.firmas && filtros.metodos && cls.total_metodos > 0)
+                || (filtros.variables_clase && cls.total_atributos > 0)) && (
                 <MetodosClase
                   nombreClase={cls.nombre}
                   archivo={rutaArchivo}
@@ -164,24 +187,28 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
           ))}
 
           {/* Funciones sueltas */}
-          {funciones.map(fn => (
-            <FilaSimbol
-              key={fn.nombre}
-              tipo="funcion"
-              nombre={fn.nombre}
-              firma={filtros.firmas ? fn.firma : null}
-              docstring={filtros.docstrings ? fn.docstring : null}
-              esAsync={fn.es_async}
-              seleccionado={seleccionado}
-              onClick={() => onSeleccionar({
-                tipo: 'funcion', nombre: fn.nombre,
-                archivo: rutaArchivo, ...fn,
-              })}
-            />
+          {filtros.funciones && funciones.map(fn => (
+            <div key={fn.nombre}>
+              <FilaSimbol
+                tipo="funcion"
+                nombre={fn.nombre}
+                firma={filtros.firmas ? fn.firma : null}
+                docstring={filtros.docstrings ? fn.docstring : null}
+                esAsync={fn.es_async}
+                seleccionado={seleccionado}
+                onClick={() => onSeleccionar({
+                  tipo: 'funcion', nombre: fn.nombre,
+                  archivo: rutaArchivo, ...fn,
+                })}
+              />
+              {filtros.llamadas && fn.llamadas?.map(llamada => (
+                <FilaLlamada key={llamada} nombre={llamada} />
+              ))}
+            </div>
           ))}
 
           {/* Variables de modulo */}
-          {filtros.variables && variables.map(v => (
+          {filtros.variables_globales && variables.map(v => (
             <FilaSimbol
               key={v.nombre}
               tipo="variable"
@@ -207,7 +234,7 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
                                  bg-gray-800 text-gray-500 border-gray-600 leading-none">
                   IMP
                 </span>
-                <span className="text-[11px] text-gray-500 font-mono truncate">{etiqueta}</span>
+                <span className="text-[11px] text-gray-500 font-mono truncate select-text">{etiqueta}</span>
               </div>
             )
           })}
@@ -222,8 +249,9 @@ function BloqueArchivo({ rutaArchivo, filtros, seleccionado, onSeleccionar }) {
 // ---------------------------------------------------------------------------
 
 function MetodosClase({ nombreClase, archivo, filtros, seleccionado, onSeleccionar }) {
-  const [metodos,  setMetodos]  = useState([])
-  const [cargando, setCargando] = useState(false)
+  const [metodos,    setMetodos]    = useState([])
+  const [atributos,  setAtributos]  = useState([])
+  const [cargando,   setCargando]   = useState(false)
 
   useEffect(() => {
     let cancelado = false
@@ -232,7 +260,10 @@ function MetodosClase({ nombreClase, archivo, filtros, seleccionado, onSeleccion
       try {
         const { getMetodos } = await import('../api/client.js')
         const res = await getMetodos(nombreClase)
-        if (!cancelado) setMetodos(res?.metodos ?? [])
+        if (!cancelado) {
+          setMetodos(res?.metodos    ?? [])
+          setAtributos(res?.atributos ?? [])
+        }
       } catch {
         // clase sin metodos
       } finally {
@@ -247,18 +278,36 @@ function MetodosClase({ nombreClase, archivo, filtros, seleccionado, onSeleccion
 
   return (
     <div className="ml-3 border-l border-gray-800 pl-2">
-      {metodos.map(m => (
+      {filtros.firmas && filtros.metodos && metodos.map(m => (
+        <div key={m.nombre}>
+          <FilaSimbol
+            tipo="metodo"
+            nombre={m.nombre}
+            firma={m.firma}
+            docstring={filtros.docstrings ? m.docstring : null}
+            esAsync={m.es_async}
+            seleccionado={seleccionado}
+            onClick={() => onSeleccionar({
+              tipo: 'metodo', nombre: m.nombre,
+              clase: nombreClase, archivo, ...m,
+            })}
+          />
+          {filtros.llamadas && m.llamadas?.map(llamada => (
+            <FilaLlamada key={llamada} nombre={llamada} extra="pl-5" />
+          ))}
+        </div>
+      ))}
+
+      {filtros.variables_clase && atributos.map(a => (
         <FilaSimbol
-          key={m.nombre}
-          tipo="metodo"
-          nombre={m.nombre}
-          firma={filtros.firmas ? m.firma : null}
-          docstring={filtros.docstrings ? m.docstring : null}
-          esAsync={m.es_async}
+          key={a.nombre}
+          tipo="variable"
+          nombre={a.nombre}
+          firma={a.tipo ? `${a.nombre}: ${a.tipo}` : null}
           seleccionado={seleccionado}
           onClick={() => onSeleccionar({
-            tipo: 'metodo', nombre: m.nombre,
-            clase: nombreClase, archivo, ...m,
+            tipo: 'variable', nombre: `${nombreClase}.${a.nombre}`,
+            archivo, clase: nombreClase, ...a,
           })}
         />
       ))}
