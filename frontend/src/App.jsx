@@ -181,7 +181,11 @@ export default function App() {
 
   const handleToggleCarpeta = useCallback((carpeta, incluir) => {
     setArchivosExcluidos(prev => {
-      const rutas = archivosCompletos[carpeta] ?? []
+      // Incluye la carpeta exacta y todas sus subcarpetas
+      const prefix = carpeta + '/'
+      const rutas = Object.entries(archivosCompletos)
+        .filter(([k]) => k === carpeta || k.startsWith(prefix))
+        .flatMap(([, v]) => v)
       const next = new Set(prev)
       for (const ruta of rutas) {
         if (incluir) next.delete(ruta)
