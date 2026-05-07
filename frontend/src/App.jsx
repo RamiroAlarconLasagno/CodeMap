@@ -9,7 +9,8 @@ import TopBar      from './components/TopBar.jsx'
 import FilterPanel from './components/FilterPanel.jsx'
 import FileTree    from './components/FileTree.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
-import ScopePanel  from './components/ScopePanel.jsx'
+import ScopePanel      from './components/ScopePanel.jsx'
+import RelacionesPanel from './components/RelacionesPanel.jsx'
 
 // ---------------------------------------------------------------------------
 // Estado inicial
@@ -275,7 +276,7 @@ export default function App() {
         {/* Tab bar */}
         <div className="flex border-b border-gray-800 bg-[#0f1117] px-2 gap-0.5 pt-1.5 shrink-0">
           {[
-            { id: 'estructura', label: 'código' },
+            { id: 'estructura', label: vista === 'relaciones' ? 'relaciones' : vista === 'busqueda' ? 'búsqueda' : 'código' },
             { id: 'alcance',    label: `alcance${archivosExcluidos.size ? ` (${archivosExcluidos.size})` : ''}` },
           ].map(tab => (
             <button
@@ -292,7 +293,17 @@ export default function App() {
         </div>
 
         {/* Contenido */}
-        {tabCentral === 'estructura' ? (
+        {tabCentral === 'alcance' ? (
+          <ScopePanel
+            archivos={archivosCompletos}
+            excluidos={archivosExcluidos}
+            onToggleArchivo={handleToggleArchivo}
+            onToggleCarpeta={handleToggleCarpeta}
+            onToggleTodo={handleToggleTodo}
+          />
+        ) : vista === 'relaciones' ? (
+          <RelacionesPanel librerias={librerias} />
+        ) : (
           <FileTree
             archivos={archivosVisibles}
             filtros={filtros}
@@ -300,14 +311,6 @@ export default function App() {
             onSeleccionar={handleSeleccionar}
             cargando={cargando}
             error={error}
-          />
-        ) : (
-          <ScopePanel
-            archivos={archivosCompletos}
-            excluidos={archivosExcluidos}
-            onToggleArchivo={handleToggleArchivo}
-            onToggleCarpeta={handleToggleCarpeta}
-            onToggleTodo={handleToggleTodo}
           />
         )}
       </div>
