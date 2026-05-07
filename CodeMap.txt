@@ -1,0 +1,745 @@
+[PROYECTO] CodeMap
+[RUTA] C:\Users\Ingra\OneDrive\Escritorio\CodeMap
+====================================================================================================
+[CARPETA] core
+[ARCHIVO] __init__.py
+[ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] __init__.py
+  [FUNCION] _lenguaje(ruta: Path) -> str | None :: "Devuelve el lenguaje segun la extension, o None si no esta soportada."
+  [FUNCION] _es_valido(ruta: Path, raiz: Path) -> bool :: "Verifica que el archivo sea soportado y no este en carpeta excluida."
+  [FUNCION] _parsear(ruta: Path, raiz: Path) -> ArchivoInfo :: "Dispatcher: envia el archivo al parser correcto segun lenguaje."
+  [FUNCION] construir_indice(carpeta: Path) -> ProjectIndex :: "Recorre la carpeta recursivamente y construye el indice en memoria."
+  [FUNCION] reanalizar(indice: ProjectIndex) -> ProjectIndex :: "Reconstruye el indice completo desde cero. No hace merge."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] c_parser.py
+  [FUNCION] _pasada_defines_includes(lineas: list, info: ArchivoInfo) -> None :: "Trabaja sobre lineas ORIGINALES: los strings son los modulos a incluir."
+  [FUNCION] _pasada_clases(lineas: list, lineas_limpias: list, scopes: list, info: ArchivoInfo) -> None
+  [FUNCION] _pasada_funciones(lineas_limpias: list, scopes: list, info: ArchivoInfo) -> None
+  [FUNCION] _pasada_variables(lineas_limpias: list, scopes: list, info: ArchivoInfo) -> None
+  [FUNCION] parsear_archivo(ruta: Path, raiz: Path, lenguaje: str) -> ArchivoInfo :: "Lee un archivo C/C++ y devuelve su ArchivoInfo completo."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] dart_parser.py
+  [FUNCION] parsear_archivo(ruta: Path, raiz: Path) -> ArchivoInfo :: "Lee un archivo .dart y devuelve su ArchivoInfo completo."
+  [FUNCION] _pasada_imports(lineas: list[str], info: ArchivoInfo) -> None :: "Extrae imports Dart sobre el codigo original (no limpiado). Los strings de los imports se eliminarian con limpiar_dart, por eso esta pasada trabaja sobre el texto sin modificar."
+  [FUNCION] _pasada_clases(lineas: list[str], lineas_limpias: list[str], scopes: list[str], info: ArchivoInfo) -> None :: "Detecta clases, mixins y enums; extrae sus metodos y atributos."
+  [FUNCION] _extraer_miembros_clase(nombre_clase: str, lineas: list[str], lineas_limpias: list[str], clase: ClaseInfo) -> None :: "Extrae metodos y atributos del bloque de una clase."
+  [FUNCION] _agregar_llamadas_metodo(linea_inicio: int, lineas: list[str], lineas_limpias: list[str], metodo: MetodoInfo) -> None :: "Extrae las llamadas dentro del cuerpo de un metodo."
+  [FUNCION] _pasada_funciones(lineas: list[str], lineas_limpias: list[str], scopes: list[str], info: ArchivoInfo) -> None :: "Extrae funciones sueltas de nivel modulo."
+  [FUNCION] _pasada_variables(lineas_limpias: list[str], scopes: list[str], info: ArchivoInfo) -> None :: "Extrae variables de nivel modulo (final, const, late, var)."
+  [FUNCION] _firma_clase(linea: str, nombre: str) -> str :: "Extrae la firma de la clase desde la linea de declaracion."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] js_parser.py
+  [FUNCION] _extraer_cuerpo_metodo(lineas: list, k: int) -> tuple :: "Extrae el cuerpo de un metodo/funcion cuya firma esta en lineas[k]. A diferencia de extraer_bloque_llaves, ignora las llaves '{}' que estan dentro de parentesis '()' — por ejemplo default params como (x = {}). Esto evita que 'async get(endpoint, params = {}) {' cierre en el '}' del default param en lugar del '}' real de cierre del metodo."
+  [FUNCION] _pasada_imports(lineas: list, info: ArchivoInfo) -> None :: "Trabaja sobre lineas ORIGINALES: los strings son los modulos a importar."
+  [FUNCION] _pasada_clases(lineas: list, lineas_limpias: list, scopes: list, info: ArchivoInfo) -> None
+  [FUNCION] _pasada_funciones(lineas_limpias: list, scopes: list, info: ArchivoInfo) -> None
+  [FUNCION] _pasada_variables(lineas_limpias: list, scopes: list, info: ArchivoInfo) -> None
+  [FUNCION] parsear_archivo(ruta: Path, raiz: Path, lenguaje: str) -> ArchivoInfo :: "Lee un archivo JS/JSX/TS/TSX y devuelve su ArchivoInfo completo."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] python_parser.py
+  [CLASE] _VisitanteLlamadas() :: "Extrae nombres de llamadas unicas en orden de aparicion."
+    [METODO] __init__(self)
+    [METODO] visit_Call(self, node: ast.Call)
+    [METODO] _nombre_llamada(self, nodo) -> Optional[str]
+  [FUNCION] parsear_archivo(ruta: Path, raiz: Path) -> ArchivoInfo :: "Lee un archivo .py y devuelve su ArchivoInfo completo."
+  [FUNCION] _firma_args(args: ast.arguments, omitir_self: bool = False) -> str :: "Construye la lista de argumentos como string."
+  [FUNCION] _arg_con_tipo(arg: ast.arg) -> str :: "Devuelve 'nombre: tipo' o 'nombre' si no tiene tipo."
+  [FUNCION] _firma_funcion(nodo: ast.FunctionDef | ast.AsyncFunctionDef, omitir_self: bool = False) -> str :: "Construye la firma completa: nombre(args) -> retorno."
+  [FUNCION] _firma_clase(nodo: ast.ClassDef) -> str :: "Firma basada en __init__ sin self. Si no hay __init__: NombreClase()."
+  [FUNCION] _clases_base(nodo: ast.ClassDef) -> list[str] :: "Extrae los nombres de las clases base."
+  [FUNCION] _valor_simple(nodo) -> Optional[str] :: "Extrae el valor solo si es un literal simple. No evalua expresiones."
+  [FUNCION] _extraer_llamadas(nodo: ast.AST) -> list[LlamadaInfo]
+  [FUNCION] _extraer_variables_modulo(arbol: ast.Module) -> list[VariableInfo] :: "Extrae variables de nivel modulo (AnnAssign y Assign)."
+  [FUNCION] _extraer_atributos_clase(nodo: ast.ClassDef) -> list[VariableInfo] :: "Extrae atributos de clase: cuerpo directo + self.x en __init__."
+  [FUNCION] _extraer_imports(arbol: ast.Module) -> list[ImportInfo]
+  [FUNCION] _docstring(nodo) -> str :: "Extrae el docstring compactado a una linea."
+  [FUNCION] _decoradores(nodo) -> list[str]
+  [FUNCION] _parsear_metodo(nodo: ast.FunctionDef | ast.AsyncFunctionDef) -> MetodoInfo
+  [FUNCION] _parsear_clase(nodo: ast.ClassDef) -> ClaseInfo
+  [FUNCION] _parsear_funcion(nodo: ast.FunctionDef | ast.AsyncFunctionDef) -> FuncionInfo
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/analyzer
+[ARCHIVO] regex_base.py
+  [FUNCION] limpiar_dart(codigo: str) -> str :: "Elimina strings y comentarios Dart para evitar falsos positivos en regex. Maneja: '', "", ''', """, comentarios // ///, /* */ Preserva saltos de linea para mantener numeracion de lineas intacta."
+  [FUNCION] limpiar_js_ts(codigo: str) -> str :: "Elimina strings y comentarios JS/TS para evitar falsos positivos en regex. Maneja: '', "", `` (template literals), comentarios // y /* */ Preserva saltos de linea."
+  [FUNCION] limpiar_c_cpp(codigo: str) -> str :: "Elimina strings y comentarios C/C++ para evitar falsos positivos en regex. Maneja: '', "", comentarios // y /* */ Preserva saltos de linea."
+  [FUNCION] mapa_scopes_llaves(lineas: list[str]) -> list[str] :: "Devuelve lista paralela con el scope de cada linea. Valores posibles: 'modulo'           → nivel 0, fuera de cualquier bloque 'clase:Nombre'     → dentro del cuerpo de una clase 'funcion:Nombre'   → dentro de una funcion o metodo 'bloque'           → if, for, while, lambda, etc."
+  [FUNCION] extraer_bloque_llaves(lineas: list[str], linea_inicio: int) -> tuple[int, str] :: "Extrae el texto de un bloque { } balanceado desde linea_inicio. Returns: (linea_fin, texto_completo_del_bloque)"
+  [FUNCION] extraer_llamadas_texto(texto: str, patron: re.Pattern) -> list[LlamadaInfo] :: "Extrae llamadas unicas desde texto ya limpio. Args: texto:  Codigo fuente ya pasado por el limpiador correspondiente. patron: Regex con grupo 1 capturando el nombre de la llamada. Returns: Lista de LlamadaInfo unicas en orden de primera aparicion. Excluye LLAMADAS_EXCLUIDAS y palabras de control de flujo."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] filters.py
+  [FUNCION] f_libreria(indice: ProjectIndex, nombre_lib: str) -> list[dict] :: "Archivos/funciones/metodos que usan una libreria. Busca en imports Y en llamadas simultaneamente."
+  [FUNCION] f_buscar(indice: ProjectIndex, patron: str) -> list[dict] :: "Busca clases, metodos y funciones por nombre. Soporta wildcards * y ?. Sin wildcards: busqueda de subcadena."
+  [FUNCION] f_idioma(indice: ProjectIndex) -> dict :: "Detecta mezcla de idiomas en nombres de funciones y clases. Heuristica por tokens snake_case y CamelCase contra diccionarios es/en."
+  [FUNCION] _tokenizar(nombre: str) -> list[str] :: "Convierte CamelCase y snake_case en lista de tokens en minusculas."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] index.py
+  [CLASE] LlamadaInfo()
+  [CLASE] VariableInfo()
+  [CLASE] MetodoInfo()
+  [CLASE] ClaseInfo()
+  [CLASE] FuncionInfo()
+  [CLASE] ImportInfo()
+  [CLASE] ArchivoInfo()
+  [CLASE] ProjectIndex()
+    [METODO] esta_vacio(self) -> bool
+    [METODO] total_archivos(self) -> int
+    [METODO] total_clases(self) -> int
+    [METODO] total_funciones(self) -> int
+    [METODO] total_metodos(self) -> int
+    [METODO] total_variables(self) -> int
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/mcp
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] core/mcp
+[ARCHIVO] server.py
+  [FUNCION] async _manejar_herramienta(nombre: str, args: dict) -> list[TextContent] :: "Despacha la herramienta MCP a la funcion correspondiente."
+  [FUNCION] async iniciar_servidor(carpeta: Path) -> None :: "Construye el indice y arranca el servidor MCP por stdio."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] queries.py
+  [FUNCION] q_carpetas(indice: ProjectIndex) -> dict[str, list[str]] :: "Arbol carpeta -> lista de archivos."
+  [FUNCION] q_imports(indice: ProjectIndex, archivo: Optional[str] = None) -> dict[str, list[dict]] :: "Imports por archivo. Sin archivo devuelve todos."
+  [FUNCION] q_clases(indice: ProjectIndex, archivo: Optional[str] = None) -> dict[str, list[dict]] :: "Clases sin metodos. Sin archivo devuelve todas."
+  [FUNCION] q_metodos(indice: ProjectIndex, clase: str) -> Optional[dict] :: "Metodos de una clase especifica por nombre exacto."
+  [FUNCION] q_funciones(indice: ProjectIndex, archivo: Optional[str] = None) -> dict[str, list[dict]] :: "Funciones sueltas. Sin archivo devuelve todas."
+  [FUNCION] q_variables(indice: ProjectIndex, archivo: Optional[str] = None, scope: Optional[str] = None) -> dict[str, list[dict]] :: "Variables de modulo o de clase segun scope. scope: 'modulo'|'clase'|None."
+  [FUNCION] q_llamadas(indice: ProjectIndex, simbolo: str) -> Optional[dict] :: "Llamadas de 'Clase.metodo' o 'funcion_suelta'."
+  [FUNCION] q_usos(indice: ProjectIndex, nombre: str) -> list[dict] :: "Donde aparece un simbolo en llamadas (busqueda parcial)."
+  [FUNCION] q_estado(indice: ProjectIndex) -> dict :: "Totales, carpeta raiz, fecha de analisis, archivos con error."
+  [FUNCION] _filtrar_archivo(indice: ProjectIndex, archivo: Optional[str]) -> dict :: "Devuelve el subconjunto de archivos del indice segun filtro."
+----------------------------------------------------------------------------------------------------
+[CARPETA] core
+[ARCHIVO] state.py
+  [FUNCION] get_indice() -> ProjectIndex :: "Devuelve el indice activo. Lanza RuntimeError si no fue inicializado."
+  [FUNCION] set_indice(indice: ProjectIndex) -> None :: "Reemplaza el indice activo."
+  [FUNCION] esta_inicializado() -> bool :: "Verifica si el indice fue inicializado, sin lanzar excepcion."
+  [FUNCION] _reset() -> None :: "Solo para tests — resetea el estado global."
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] __init__.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] control.py
+  [CLASE] CarpetaBody()
+  [FUNCION] estado() [@router.get('/estado')]
+  [FUNCION] post_reanalizar() [@router.post('/reanalizar')]
+  [FUNCION] exportar(nivel: str) [@router.get('/exportar/{nivel}', response_class=PlainTextResponse)]
+  [FUNCION] cambiar_carpeta(body: CarpetaBody) [@router.post('/carpeta')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] estructura.py
+  [FUNCION] carpetas() [@router.get('/carpetas')]
+  [FUNCION] clases(archivo: Optional[str] = None) [@router.get('/clases')]
+  [FUNCION] metodos(clase: str) [@router.get('/metodos/{clase}')]
+  [FUNCION] funciones(archivo: Optional[str] = None) [@router.get('/funciones')]
+  [FUNCION] imports(archivo: Optional[str] = None) [@router.get('/imports')]
+  [FUNCION] variables(archivo: Optional[str] = None, scope: Optional[str] = None) [@router.get('/variables')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web/routes
+[ARCHIVO] relaciones.py
+  [FUNCION] llamadas(simbolo: str) [@router.get('/llamadas/{simbolo:path}')]
+  [FUNCION] usos(nombre: str) [@router.get('/usos/{nombre}')]
+  [FUNCION] libreria(nombre: str) [@router.get('/libreria/{nombre}')]
+  [FUNCION] buscar(patron: str) [@router.get('/buscar')]
+  [FUNCION] idioma() [@router.get('/idioma')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] interfaces/web
+[ARCHIVO] server.py
+  [FUNCION] crear_app() -> FastAPI :: "Fabrica la FastAPI app con todos los routers registrados."
+  [FUNCION] iniciar_web(carpeta: Path) -> None :: "Construye el indice y arranca el servidor FastAPI en localhost:8000."
+----------------------------------------------------------------------------------------------------
+[CARPETA] /
+[ARCHIVO] main.py
+  [FUNCION] _parsear_args() -> argparse.Namespace
+  [FUNCION] _seleccionar_carpeta() -> Path :: "Abre dialogo grafico si no se paso --carpeta."
+  [FUNCION] main() -> None
+----------------------------------------------------------------------------------------------------
+[CARPETA] shared
+[ARCHIVO] __init__.py
+[ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
+----------------------------------------------------------------------------------------------------
+[CARPETA] shared
+[ARCHIVO] config.py
+----------------------------------------------------------------------------------------------------
+[CARPETA] shared
+[ARCHIVO] formatters.py
+  [FUNCION] exportar_txt(indice: ProjectIndex, nivel: str = 'firmas') -> str :: "Exporta el indice como texto plano. nivel: estructura|firmas|completo."
+  [FUNCION] exportar_md(indice: ProjectIndex, nivel: str = 'firmas') -> str :: "Exporta el indice como Markdown. nivel: estructura|firmas|completo."
+  [FUNCION] _bloque_archivo(info: ArchivoInfo, nivel: str, prefijo: str = '') -> list[str] :: "Genera las lineas de un archivo dado el nivel de detalle."
+  [FUNCION] _validar_nivel(nivel: str) -> None
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] __init__.py
+[ERROR] SyntaxError: invalid non-printable character U+FEFF (__init__.py, line 1)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] conftest.py
+  [FUNCION] indice() -> ProjectIndex [@pytest.fixture] :: "Indice de prueba con dos archivos, clases, metodos, funciones y variables."
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests/fixtures
+[ARCHIVO] sample.py
+  [CLASE] ClaseBase(nombre: str) :: "Clase base de prueba."
+    [METODO] __init__(self, nombre: str)
+    [METODO] metodo_simple(self) -> str :: "Devuelve el nombre."
+    [METODO] nombre_upper(self) -> str [@property]
+    [METODO] metodo_estatico(x: int) -> int [@staticmethod]
+    [METODO] desde_dict(cls, datos: dict) -> 'ClaseBase' [@classmethod]
+  [CLASE] ClaseHija(nombre: str, nivel: int = 0) :: "Clase hija que hereda de ClaseBase."
+    [METODO] __init__(self, nombre: str, nivel: int = 0)
+    [METODO] metodo_override(self) -> str
+    [METODO] async metodo_async(self, items: List[str]) -> List[str] :: "Procesa items de forma asincrona."
+  [CLASE] ClaseMultipleHerencia() :: "Clase con herencia multiple."
+    [METODO] __init__(self)
+  [FUNCION] funcion_simple(x: int, y: int) -> int :: "Suma dos numeros."
+  [FUNCION] funcion_sin_tipo(nombre, valor = None)
+  [FUNCION] async funcion_asincrona(url: str) -> dict :: "Descarga datos de una URL."
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_c_parser.py
+  [CLASE] TestMetadatos()
+    [METODO] test_sin_error(self, info)
+    [METODO] test_lenguaje(self, info)
+    [METODO] test_nombre_archivo(self, info)
+  [CLASE] TestIncludes()
+    [METODO] test_cantidad(self, info)
+    [METODO] test_includes_sistema(self, info)
+    [METODO] test_includes_locales(self, info)
+    [METODO] test_no_es_from(self, info)
+  [CLASE] TestDefines()
+    [METODO] defines(self, info) [@pytest.fixture(autouse=True)]
+    [METODO] test_define_entero(self)
+    [METODO] test_define_buffer(self)
+    [METODO] test_define_string(self)
+    [METODO] test_tipo_es_define(self)
+    [METODO] test_scope_modulo(self)
+  [CLASE] TestClases()
+    [METODO] test_cantidad(self, info)
+    [METODO] test_nombres(self, info)
+    [METODO] test_SensorBase_sin_herencia(self, sensor_base)
+    [METODO] test_SensorADE9000_hereda_SensorBase(self, sensor_ade)
+  [CLASE] TestAtributos()
+    [METODO] test_atributos_SensorBase(self, sensor_base)
+    [METODO] test_tipos_SensorBase(self, sensor_base)
+    [METODO] test_atributos_SensorADE9000(self, sensor_ade)
+    [METODO] test_atributo_template(self, sensor_ade)
+    [METODO] test_scope_clase(self, sensor_base)
+  [CLASE] TestMetodosSensorBase()
+    [METODO] metodos(self, sensor_base) [@pytest.fixture(autouse=True)]
+    [METODO] test_constructor_detectado(self)
+    [METODO] test_constructor_es_primero(self, sensor_base)
+    [METODO] test_metodos_detectados(self)
+    [METODO] test_constructor_llama_inicializar(self)
+    [METODO] test_inicializar_llama_Wire_begin(self)
+    [METODO] test_constructor_no_confunde_nombre(self, sensor_base)
+  [CLASE] TestMetodosSensorADE9000()
+    [METODO] metodos(self, sensor_ade) [@pytest.fixture(autouse=True)]
+    [METODO] test_constructor_detectado(self)
+    [METODO] test_metodos_detectados(self)
+    [METODO] test_constructor_llama_reserve(self)
+    [METODO] test_leer_override_llama_leerADC(self)
+    [METODO] test_leerLote_llama_leer(self)
+    [METODO] test_constructor_no_confunde_regex(self, sensor_ade)
+  [CLASE] TestFunciones()
+    [METODO] funciones(self, info) [@pytest.fixture(autouse=True)]
+    [METODO] test_nombres_detectados(self)
+    [METODO] test_calcularPromedio_llama_size(self)
+    [METODO] test_setup_llama_begin(self)
+    [METODO] test_loop_llama_delay(self)
+    [METODO] test_clases_no_son_funciones(self)
+  [CLASE] TestVariables()
+    [METODO] variables(self, info) [@pytest.fixture(autouse=True)]
+    [METODO] test_PIN_ALERTA(self)
+    [METODO] test_FACTOR_ESCALA(self)
+    [METODO] test_total_instancias(self)
+    [METODO] test_scope_modulo(self)
+  [CLASE] TestArchivoInexistente()
+    [METODO] test_error_registrado(self)
+    [METODO] test_listas_vacias_en_error(self)
+  [FUNCION] info() [@pytest.fixture(scope='module')]
+  [FUNCION] sensor_base(info) [@pytest.fixture(scope='module')]
+  [FUNCION] sensor_ade(info) [@pytest.fixture(scope='module')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_dart_parser.py
+  [FUNCION] info() -> ArchivoInfo [@pytest.fixture(scope='module')] :: "Parsea sample.dart una sola vez para todos los tests del modulo."
+  [FUNCION] test_sin_error(info)
+  [FUNCION] test_lenguaje(info)
+  [FUNCION] test_nombre_archivo(info)
+  [FUNCION] test_imports_detectados(info)
+  [FUNCION] test_import_con_show(info)
+  [FUNCION] test_import_con_alias_registrado(info)
+  [FUNCION] test_clases_detectadas(info)
+  [FUNCION] test_mixin_detectado(info)
+  [FUNCION] test_enum_detectado(info)
+  [FUNCION] test_clase_herencia(info)
+  [FUNCION] test_clase_con_mixin(info)
+  [FUNCION] test_metodos_sensor(info)
+  [FUNCION] test_metodo_async(info)
+  [FUNCION] test_metodo_no_async(info)
+  [FUNCION] test_constructor_detectado(info)
+  [FUNCION] test_constructor_nombrado(info)
+  [FUNCION] test_override_detectado(info)
+  [FUNCION] test_atributos_sensor(info)
+  [FUNCION] test_atributo_scope_clase(info)
+  [FUNCION] test_funciones_detectadas(info)
+  [FUNCION] test_funcion_async(info)
+  [FUNCION] test_funcion_no_async(info)
+  [FUNCION] test_variables_modulo_detectadas(info)
+  [FUNCION] test_variables_scope_modulo(info)
+  [FUNCION] test_llamadas_en_metodo(info)
+  [FUNCION] test_llamadas_unicas(info) :: "Ninguna llamada debe repetirse dentro del mismo metodo."
+  [FUNCION] test_archivo_inexistente(tmp_path)
+  [FUNCION] test_archivo_vacio(tmp_path)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_filters.py
+  [FUNCION] test_libreria_encuentra_por_import(indice)
+  [FUNCION] test_libreria_encuentra_por_llamada(indice)
+  [FUNCION] test_libreria_busqueda_parcial(indice)
+  [FUNCION] test_libreria_no_encontrada(indice)
+  [FUNCION] test_libreria_resultado_tiene_campos(indice)
+  [FUNCION] test_libreria_import_simbolo_es_none(indice)
+  [FUNCION] test_libreria_llamada_incluye_simbolo(indice)
+  [FUNCION] test_libreria_case_insensitive(indice)
+  [FUNCION] test_libreria_json_en_metodo(indice)
+  [FUNCION] test_buscar_subcadena(indice)
+  [FUNCION] test_buscar_wildcard_asterisco(indice)
+  [FUNCION] test_buscar_wildcard_interrogacion(indice)
+  [FUNCION] test_buscar_encuentra_metodos(indice)
+  [FUNCION] test_buscar_encuentra_funciones(indice)
+  [FUNCION] test_buscar_encuentra_clases(indice)
+  [FUNCION] test_buscar_sin_resultados(indice)
+  [FUNCION] test_buscar_resultado_tiene_campos(indice)
+  [FUNCION] test_buscar_case_insensitive(indice)
+  [FUNCION] test_buscar_wildcard_todo(indice)
+  [FUNCION] test_idioma_devuelve_estructura(indice)
+  [FUNCION] test_idioma_dominante_es_valido(indice)
+  [FUNCION] test_idioma_conteos_no_negativos(indice)
+  [FUNCION] test_idioma_archivos_mezcla_es_lista(indice)
+  [FUNCION] test_idioma_detecta_espanol() :: "Indice con nombres puramente en espanol."
+  [FUNCION] test_idioma_detecta_ingles() :: "Indice con nombres puramente en ingles."
+  [FUNCION] test_idioma_indice_vacio()
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_formatters.py
+  [FUNCION] test_nivel_invalido_txt(indice)
+  [FUNCION] test_nivel_invalido_md(indice)
+  [FUNCION] test_txt_estructura_contiene_clases(indice)
+  [FUNCION] test_txt_estructura_contiene_funciones(indice)
+  [FUNCION] test_txt_estructura_contiene_variables(indice)
+  [FUNCION] test_txt_estructura_no_contiene_firmas(indice)
+  [FUNCION] test_txt_estructura_no_contiene_llamadas(indice)
+  [FUNCION] test_txt_firmas_contiene_firmas(indice)
+  [FUNCION] test_txt_firmas_contiene_docstrings(indice)
+  [FUNCION] test_txt_firmas_no_contiene_llamadas(indice)
+  [FUNCION] test_txt_completo_contiene_llamadas(indice)
+  [FUNCION] test_txt_completo_contiene_todo(indice)
+  [FUNCION] test_md_contiene_headers(indice)
+  [FUNCION] test_md_contiene_resumen(indice)
+  [FUNCION] test_md_marca_archivos_con_error(indice)
+  [FUNCION] test_md_firmas_contiene_firmas(indice)
+  [FUNCION] test_md_completo_contiene_llamadas(indice)
+  [FUNCION] test_txt_devuelve_string(indice)
+  [FUNCION] test_md_devuelve_string(indice)
+  [FUNCION] test_archivos_ordenados_alfabeticamente(indice)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_index.py
+  [FUNCION] _archivo(nombre: str = 'mod.py', lenguaje: str = 'python') -> ArchivoInfo
+  [FUNCION] _indice_vacio() -> ProjectIndex
+  [FUNCION] _indice_con_archivos() -> ProjectIndex
+  [FUNCION] test_llamada_info_crea_correctamente()
+  [FUNCION] test_variable_info_campos()
+  [FUNCION] test_variable_info_tipo_opcional()
+  [FUNCION] test_metodo_info_defaults()
+  [FUNCION] test_metodo_info_completo()
+  [FUNCION] test_clase_info_defaults()
+  [FUNCION] test_clase_info_con_herencia()
+  [FUNCION] test_funcion_info_defaults()
+  [FUNCION] test_import_info_simple()
+  [FUNCION] test_import_info_from()
+  [FUNCION] test_archivo_info_defaults()
+  [FUNCION] test_archivo_info_con_error()
+  [FUNCION] test_indice_vacio()
+  [FUNCION] test_indice_total_archivos()
+  [FUNCION] test_indice_total_clases()
+  [FUNCION] test_indice_total_funciones()
+  [FUNCION] test_indice_total_metodos()
+  [FUNCION] test_indice_total_variables()
+  [FUNCION] test_indice_no_esta_vacio()
+  [FUNCION] test_indice_carpeta_raiz()
+  [FUNCION] test_indice_ultimo_analisis()
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_js_parser.py
+  [CLASE] TestMetadatos()
+    [METODO] test_sin_error(self, info)
+    [METODO] test_lenguaje(self, info)
+    [METODO] test_nombre_archivo(self, info)
+  [CLASE] TestImports()
+    [METODO] test_cantidad(self, info)
+    [METODO] test_import_named_react(self, info)
+    [METODO] test_import_mixed_default_y_named(self, info)
+    [METODO] test_import_type(self, info)
+    [METODO] test_import_bare(self, info)
+  [CLASE] TestClases()
+    [METODO] test_cantidad(self, info)
+    [METODO] test_nombres(self, info)
+    [METODO] test_ApiClient_sin_herencia(self, cliente)
+    [METODO] test_ApiClientAutenticado_hereda_de_ApiClient(self, cliente_auth)
+    [METODO] test_firma_herencia(self, cliente_auth)
+  [CLASE] TestMetodosApiClient()
+    [METODO] metodos(self, cliente) [@pytest.fixture(autouse=True)]
+    [METODO] test_metodos_detectados(self)
+    [METODO] test_constructor_es_primero(self, cliente)
+    [METODO] test_get_es_async(self)
+    [METODO] test_post_es_async(self)
+    [METODO] test_getInstance_no_es_async(self)
+    [METODO] test_getter_detectado(self)
+    [METODO] test_get_llama_construirUrl(self)
+    [METODO] test_post_llama_construirUrl(self)
+  [CLASE] TestMetodosApiClientAutenticado()
+    [METODO] metodos(self, cliente_auth) [@pytest.fixture(autouse=True)]
+    [METODO] test_metodos_detectados(self)
+    [METODO] test_get_override_es_async(self)
+  [CLASE] TestAtributos()
+    [METODO] test_atributos_ApiClient(self, cliente)
+    [METODO] test_no_duplicados(self, cliente)
+    [METODO] test_scope_clase(self, cliente)
+  [CLASE] TestFunciones()
+    [METODO] funciones(self, info) [@pytest.fixture(autouse=True)]
+    [METODO] test_nombres_detectados(self)
+    [METODO] test_construirUrl_no_es_async(self)
+    [METODO] test_useApiClient_es_arrow(self)
+    [METODO] test_manejarError_es_arrow(self)
+    [METODO] test_clases_no_son_funciones(self)
+  [CLASE] TestVariables()
+    [METODO] variables(self, info) [@pytest.fixture(autouse=True)]
+    [METODO] test_nombres_detectados(self)
+    [METODO] test_timeout_valor(self)
+    [METODO] test_instancia_null(self)
+    [METODO] test_modo_debug_false(self)
+    [METODO] test_scope_modulo(self)
+    [METODO] test_funciones_no_son_variables(self)
+    [METODO] test_clases_no_son_variables(self)
+  [CLASE] TestArchivoInexistente()
+    [METODO] test_error_registrado(self)
+    [METODO] test_listas_vacias_en_error(self)
+  [FUNCION] info() [@pytest.fixture(scope='module')]
+  [FUNCION] cliente(info) [@pytest.fixture(scope='module')]
+  [FUNCION] cliente_auth(info) [@pytest.fixture(scope='module')]
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_mcp.py
+  [FUNCION] reset_state() [@pytest.fixture(autouse=True)]
+  [FUNCION] indice_prueba() [@pytest.fixture()] :: "Indice sintetico con una clase, un metodo, una funcion y un import."
+  [FUNCION] async _llamar(nombre, args = None)
+  [FUNCION] async _json(nombre, args = None)
+  [FUNCION] async test_codemap_carpetas(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_clases_sin_filtro(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_clases_con_archivo(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_metodos_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_metodos_no_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_funciones(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_imports(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_variables_modulo(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_variables_clase(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_llamadas_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_llamadas_no_encontrado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_usos(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_libreria(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_buscar(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_idioma(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_estado(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_exportar_firmas(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_exportar_estructura(indice_prueba) [@pytest.mark.asyncio]
+  [FUNCION] async test_codemap_herramienta_desconocida(indice_prueba) [@pytest.mark.asyncio]
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_python_parser.py
+  [FUNCION] info() [@pytest.fixture]
+  [FUNCION] test_sin_error(info)
+  [FUNCION] test_lenguaje(info)
+  [FUNCION] test_nombre_archivo(info)
+  [FUNCION] test_imports_detectados(info)
+  [FUNCION] test_import_from(info)
+  [FUNCION] test_import_typing(info)
+  [FUNCION] test_variables_modulo_detectadas(info)
+  [FUNCION] test_variable_con_tipo(info)
+  [FUNCION] test_variable_con_valor(info)
+  [FUNCION] test_variables_scope_modulo(info)
+  [FUNCION] test_clases_detectadas(info)
+  [FUNCION] test_clase_base_sin_herencia(info)
+  [FUNCION] test_clase_hija_herencia(info)
+  [FUNCION] test_clase_multiple_herencia(info)
+  [FUNCION] test_clase_docstring(info)
+  [FUNCION] test_clase_firma(info)
+  [FUNCION] test_atributos_clase_base(info)
+  [FUNCION] test_atributo_de_cuerpo_clase(info)
+  [FUNCION] test_atributo_scope_es_clase(info)
+  [FUNCION] test_metodos_clase_base(info)
+  [FUNCION] test_metodo_async(info)
+  [FUNCION] test_metodo_no_async(info)
+  [FUNCION] test_decoradores(info)
+  [FUNCION] test_decorador_staticmethod(info)
+  [FUNCION] test_metodo_firma_incluye_tipo(info)
+  [FUNCION] test_metodo_docstring(info)
+  [FUNCION] test_funciones_detectadas(info)
+  [FUNCION] test_funcion_async(info)
+  [FUNCION] test_funcion_firma_con_tipos(info)
+  [FUNCION] test_funcion_docstring(info)
+  [FUNCION] test_funcion_sin_tipo_firma(info)
+  [FUNCION] test_syntax_error_capturado(tmp_path)
+  [FUNCION] test_archivo_vacio(tmp_path)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_queries.py
+  [FUNCION] test_carpetas_devuelve_arbol(indice)
+  [FUNCION] test_carpetas_agrupa_por_carpeta(indice)
+  [FUNCION] test_imports_todos(indice)
+  [FUNCION] test_imports_por_archivo(indice)
+  [FUNCION] test_imports_archivo_inexistente(indice)
+  [FUNCION] test_imports_estructura_dict(indice)
+  [FUNCION] test_clases_todas(indice)
+  [FUNCION] test_clases_por_archivo(indice)
+  [FUNCION] test_clases_sin_metodos_en_resultado(indice)
+  [FUNCION] test_clases_incluye_bases(indice)
+  [FUNCION] test_metodos_clase_existente(indice)
+  [FUNCION] test_metodos_incluye_firma_clase(indice)
+  [FUNCION] test_metodos_incluye_llamadas(indice)
+  [FUNCION] test_metodos_async_flag(indice)
+  [FUNCION] test_metodos_clase_inexistente(indice)
+  [FUNCION] test_metodos_incluye_atributos(indice)
+  [FUNCION] test_funciones_todas(indice)
+  [FUNCION] test_funciones_por_archivo(indice)
+  [FUNCION] test_funciones_incluye_llamadas(indice)
+  [FUNCION] test_variables_scope_modulo(indice)
+  [FUNCION] test_variables_scope_clase(indice)
+  [FUNCION] test_variables_sin_scope_devuelve_todas(indice)
+  [FUNCION] test_variables_archivo_sin_variables(indice)
+  [FUNCION] test_llamadas_metodo(indice)
+  [FUNCION] test_llamadas_funcion_suelta(indice)
+  [FUNCION] test_llamadas_simbolo_inexistente(indice)
+  [FUNCION] test_usos_encuentra_simbolo(indice)
+  [FUNCION] test_usos_busqueda_parcial(indice)
+  [FUNCION] test_usos_sin_resultados(indice)
+  [FUNCION] test_usos_estructura_dict(indice)
+  [FUNCION] test_estado_totales(indice)
+  [FUNCION] test_estado_carpeta_raiz(indice)
+  [FUNCION] test_estado_archivos_con_error(indice)
+  [FUNCION] test_estado_ultimo_analisis(indice)
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_state.py
+  [FUNCION] reset_state() [@pytest.fixture(autouse=True)]
+  [FUNCION] _indice_prueba() -> ProjectIndex
+  [FUNCION] test_no_inicializado_por_defecto()
+  [FUNCION] test_get_indice_sin_inicializar_lanza_error()
+  [FUNCION] test_set_indice_inicializa()
+  [FUNCION] test_get_indice_devuelve_el_mismo_objeto()
+  [FUNCION] test_set_indice_reemplaza_el_anterior()
+  [FUNCION] test_reset_limpia_el_estado()
+  [FUNCION] test_esta_inicializado_false_despues_de_reset()
+  [FUNCION] test_get_indice_despues_de_reset_lanza_error()
+----------------------------------------------------------------------------------------------------
+[CARPETA] tests
+[ARCHIVO] test_web.py
+  [FUNCION] reset_state() [@pytest.fixture(autouse=True)]
+  [FUNCION] indice_prueba() [@pytest.fixture()]
+  [FUNCION] client(indice_prueba) [@pytest.fixture()]
+  [FUNCION] test_get_carpetas(client)
+  [FUNCION] test_get_clases_sin_filtro(client)
+  [FUNCION] test_get_clases_con_archivo(client)
+  [FUNCION] test_get_metodos_encontrado(client)
+  [FUNCION] test_get_metodos_no_encontrado(client)
+  [FUNCION] test_get_funciones(client)
+  [FUNCION] test_get_imports(client)
+  [FUNCION] test_get_variables_sin_filtro(client)
+  [FUNCION] test_get_variables_scope_modulo(client)
+  [FUNCION] test_get_llamadas_encontrado(client)
+  [FUNCION] test_get_llamadas_no_encontrado(client)
+  [FUNCION] test_get_usos(client)
+  [FUNCION] test_get_libreria(client)
+  [FUNCION] test_get_buscar(client)
+  [FUNCION] test_get_idioma(client)
+  [FUNCION] test_get_estado(client)
+  [FUNCION] test_get_exportar_firmas(client)
+  [FUNCION] test_get_exportar_estructura(client)
+  [FUNCION] test_get_exportar_completo(client)
+  [FUNCION] test_get_exportar_nivel_invalido(client)
+  [FUNCION] test_post_carpeta_existente(client, tmp_path)
+  [FUNCION] test_post_carpeta_no_existe(client)
+----------------------------------------------------------------------------------------------------
+
+codemap/
+│
+├── main.py
+├── requirements.txt
+├── .gitignore
+│
+├── core/
+│   ├── __init__.py
+│   ├── index.py
+│   ├── state.py
+│   ├── queries.py
+│   ├── filters.py
+│   │
+│   ├── analyzer/
+│   │   ├── __init__.py
+│   │   ├── regex_base.py
+│   │   ├── python_parser.py
+│   │   ├── dart_parser.py
+│   │   ├── js_parser.py
+│   │   └── c_parser.py
+│   │
+│   └── mcp/
+│       ├── __init__.py
+│       └── server.py
+│
+├── interfaces/
+│   └── web/
+│       ├── __init__.py
+│       ├── server.py
+│       └── routes/
+│           ├── __init__.py
+│           ├── estructura.py
+│           ├── relaciones.py
+│           └── control.py
+│
+├── shared/
+│   ├── __init__.py
+│   ├── config.py
+│   └── formatters.py
+│
+└── frontend/
+    ├── package.json
+    ├── vite.config.js
+    ├── tailwind.config.js
+    ├── index.html
+    └── src/
+        ├── main.jsx
+        ├── App.jsx
+        ├── api/
+        │   └── client.js
+        └── components/
+            ├── TopBar.jsx
+            ├── FilterPanel.jsx
+            ├── FileTree.jsx
+            ├── DetailPanel.jsx
+            └── SearchBar.jsx
+
+
+
+
+CodeMap/
+┣ .github/
+┃ ┗ workflows/
+┃   ┣ ci.yml
+┃   ┗ tests.yml
+┣ core/
+┃ ┣ analyzer/
+┃ ┃ ┣ __pycache__/
+┃ ┃ ┃ ┣ c_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ dart_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ js_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ python_parser.cpython-312.pyc
+┃ ┃ ┃ ┣ regex_base.cpython-312.pyc
+┃ ┃ ┃ ┗ __init__.cpython-312.pyc
+┃ ┃ ┣ c_parser.py
+┃ ┃ ┣ dart_parser.py
+┃ ┃ ┣ js_parser.py
+┃ ┃ ┣ python_parser.py
+┃ ┃ ┣ regex_base.py
+┃ ┃ ┗ __init__.py
+┃ ┣ mcp/
+┃ ┃ ┣ __pycache__/
+┃ ┃ ┃ ┣ server.cpython-312.pyc
+┃ ┃ ┃ ┗ __init__.cpython-312.pyc
+┃ ┃ ┣ server.py
+┃ ┃ ┗ __init__.py
+┃ ┣ __pycache__/
+┃ ┃ ┣ filters.cpython-312.pyc
+┃ ┃ ┣ index.cpython-312.pyc
+┃ ┃ ┣ queries.cpython-312.pyc
+┃ ┃ ┣ state.cpython-312.pyc
+┃ ┃ ┗ __init__.cpython-312.pyc
+┃ ┣ filters.py
+┃ ┣ index.py
+┃ ┣ queries.py
+┃ ┣ state.py
+┃ ┗ __init__.py
+┣ frontend/
+┃ ┣ src/
+┃ ┃ ┣ api/
+┃ ┃ ┃ ┣ client.js
+┃ ┃ ┃ ┗ client.test.js
+┃ ┃ ┣ components/
+┃ ┃ ┃ ┣ DetailPanel.jsx
+┃ ┃ ┃ ┣ FileTree.jsx
+┃ ┃ ┃ ┣ FilterPanel.jsx
+┃ ┃ ┃ ┣ SearchBar.jsx
+┃ ┃ ┃ ┗ TopBar.jsx
+┃ ┃ ┣ App.jsx
+┃ ┃ ┣ index.css
+┃ ┃ ┗ main.jsx
+┃ ┣ index.html
+┃ ┣ package-lock.json
+┃ ┣ package.json
+┃ ┣ postcss.config.js
+┃ ┣ tailwind.config.js
+┃ ┗ vite.config.js
+┣ interfaces/
+┃ ┣ web/
+┃ ┃ ┣ routes/
+┃ ┃ ┃ ┣ control.py
+┃ ┃ ┃ ┣ estructura.py
+┃ ┃ ┃ ┣ relaciones.py
+┃ ┃ ┃ ┗ __init__.py
+┃ ┃ ┣ server.py
+┃ ┃ ┗ __init__.py
+┃ ┗ __init__.py
+┣ shared/
+┃ ┣ config.py
+┃ ┣ formatters.py
+┃ ┗ __init__.py
+┣ tests/
+┃ ┣ fixtures/
+┃ ┃ ┣ sample.cpp
+┃ ┃ ┣ sample.dart
+┃ ┃ ┣ sample.js
+┃ ┃ ┗ sample.py
+┃ ┣ conftest.py
+┃ ┣ test_c_parser.py
+┃ ┣ test_dart_parser.py
+┃ ┣ test_filters.py
+┃ ┣ test_formatters.py
+┃ ┣ test_index.py
+┃ ┣ test_js_parser.py
+┃ ┣ test_mcp.py
+┃ ┣ test_python_parser.py
+┃ ┣ test_queries.py
+┃ ┣ test_state.py
+┃ ┣ test_web.py
+┃ ┗ __init__.py
+┣ .gitignore
+┣ CodeMap.txt
+┣ main.py
+┣ pyproject.toml
+┣ README.md
+┗ requirements.txt

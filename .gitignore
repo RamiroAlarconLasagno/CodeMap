@@ -1,1 +1,44 @@
+# entorno virtual
+.venv/
+venv/
+env/
+
+# build / instalacion editable
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+
+# pytest y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# logs
+*.log
+
+# variables de entorno
+.env
+.env.*
+
+# editores
+.vscode/
+.idea/
+
+# sistema operativo
+.DS_Store
+Thumbs.db
+
+# proyecto
 docs/llm/
+
+# frontend — dependencias y build (NO ignorar package-lock.json)
+frontend/node_modules/
+frontend/dist/

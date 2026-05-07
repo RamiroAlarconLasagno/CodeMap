@@ -12,6 +12,12 @@ Las LLMs tienen límite de contexto. Darles todo el código de una vez consume t
 innecesariamente y reduce la calidad del razonamiento. CodeMap permite navegación
 quirúrgica por capas: árbol → archivo → clase → método → implementación puntual.
 
+Flujo típico de debugging con CodeMap:
+1. La LLM pide el árbol de carpetas para orientarse.
+2. Consulta las clases de un archivo específico.
+3. Pide los métodos y llamadas de una clase puntual.
+4. Abre el archivo real solo para leer la implementación exacta que ya identificó.
+
 ---
 
 ## Arquitectura
@@ -55,11 +61,19 @@ El dispatcher y el resto del sistema no requieren cambios.
 ## Estructura de carpetas
 
 ```
-codemap/
+CodeMap/
 │
 ├── main.py                         # Punto de entrada --web / --mcp
-├── requirements.txt
+├── requirements.txt                # Dependencias para pip install
+├── pyproject.toml                  # Empaquetado y metadata del proyecto
 ├── .gitignore
+├── README.md
+├── CodeMap.txt                     # Snapshot exportado del propio proyecto (autogenerado)
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                  # Lint y verificación de imports
+│       └── tests.yml               # Ejecución de pytest en CI
 │
 ├── core/
 │   ├── __init__.py
@@ -81,6 +95,7 @@ codemap/
 │       └── server.py               # 14 herramientas MCP expuestas por stdio
 │
 ├── interfaces/
+│   ├── __init__.py
 │   └── web/
 │       ├── __init__.py
 │       ├── server.py               # FastAPI app
@@ -95,16 +110,40 @@ codemap/
 │   ├── config.py                   # CARPETAS_EXCLUIDAS, EXTENSIONES_SOPORTADAS, LLAMADAS_EXCLUIDAS
 │   └── formatters.py               # exportar_txt() y exportar_md()
 │
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py                 # Fixtures compartidas de pytest
+│   ├── fixtures/                   # Archivos de muestra para los parsers
+│   │   ├── sample.py
+│   │   ├── sample.js
+│   │   ├── sample.dart
+│   │   └── sample.cpp
+│   ├── test_index.py               # Dataclasses y ProjectIndex
+│   ├── test_state.py               # Singleton de estado
+│   ├── test_queries.py             # Consultas sobre el índice
+│   ├── test_filters.py             # Filtros
+│   ├── test_formatters.py          # Exportación TXT y MD
+│   ├── test_python_parser.py       # Parser AST Python
+│   ├── test_js_parser.py           # Parser regex JS/TS
+│   ├── test_dart_parser.py         # Parser regex Dart
+│   ├── test_c_parser.py            # Parser regex C/C++
+│   ├── test_mcp.py                 # Herramientas MCP
+│   └── test_web.py                 # Rutas REST FastAPI
+│
 └── frontend/
     ├── package.json
+    ├── package-lock.json
     ├── vite.config.js
     ├── tailwind.config.js
+    ├── postcss.config.js           # Requerido por Tailwind v3+
     ├── index.html
     └── src/
         ├── main.jsx
         ├── App.jsx
+        ├── index.css
         ├── api/
-        │   └── client.js           # Llamadas REST a FastAPI
+        │   ├── client.js           # Llamadas REST a FastAPI
+        │   └── client.test.js      # Tests unitarios del cliente API
         └── components/
             ├── TopBar.jsx          # Ruta activa, botón Reload, estado del índice
             ├── FilterPanel.jsx     # Checkboxes de detalle + filtro por librería
@@ -205,10 +244,10 @@ Todas con prefijo `codemap_`:
     "codemap": {
       "command": "python",
       "args": [
-        "/ruta/absoluta/codemap/main.py",
+        "/ruta/absoluta/CodeMap/main.py",
         "--mcp",
         "--carpeta",
-        "/ruta/del/proyecto"
+        "/ruta/del/proyecto/a/analizar"
       ]
     }
   }
@@ -219,28 +258,65 @@ Todas con prefijo `codemap_`:
 
 ## Instalación
 
+### Requisitos
+
+- Python 3.10+ (requerido por `mcp>=1.0.0`)
+- Node.js 18+ (solo para la interfaz web — el modo `--mcp` no lo requiere)
+
+### Backend
+
 ```bash
-git clone https://github.com/.../codemap
-cd codemap
+git clone https://github.com/.../CodeMap
+cd CodeMap
 pip install -r requirements.txt
 ```
 
-**requirements.txt:**
+**`requirements.txt`:**
 ```
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
 mcp>=1.0.0
-# PySide6>=6.7.0  # opcional, para diálogo gráfico de carpeta
+# PySide6>=6.7.0  # opcional — para diálogo gráfico de carpeta
 ```
 
-Python 3.9+ requerido (`ast.unparse` disponible desde 3.9).
+Para instalación en modo desarrollo (editable):
+```bash
+pip install -e .
+```
+
+### Frontend (interfaz web)
+
+Solo necesario si se usa `--web`:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+### Tests
+
+```bash
+pytest
+# o con cobertura:
+pytest --cov=core --cov=shared --cov=interfaces
+```
+
+---
+
+## CI/CD
+
+El repositorio incluye dos workflows de GitHub Actions:
+
+- **`ci.yml`** — lint y verificación de imports en cada push
+- **`tests.yml`** — ejecución completa de pytest en cada pull request
 
 ---
 
 ## Orden de implementación
 
 **Fase 1 — Estructura base**
-`index.py` → `state.py` → `config.py` → `queries.py` → `filters.py` → `formatters.py`
+`config.py` → `index.py` → `state.py` → `queries.py` → `filters.py` → `formatters.py`
 
 **Fase 2 — Motor y punto de entrada**
 `analyzer/__init__.py` → `python_parser.py` → `main.py`
@@ -287,3 +363,11 @@ El objetivo es mostrar relación estructural, no frecuencia de ejecución.
 **`exportar_md` como salida preferida para LLM**
 El servidor MCP usa `exportar_md` por defecto. `exportar_txt` queda disponible
 para casos donde se necesite algo más compacto.
+
+**`pyproject.toml` para empaquetado**
+Coexiste con `requirements.txt`. El primero define metadata y permite `pip install -e .`
+en desarrollo; el segundo lista dependencias para instalación directa en producción.
+
+**`CodeMap.txt`**
+Snapshot exportado del propio proyecto generado por `exportar_txt`. Sirve como
+referencia rápida de la estructura actual y como ejemplo del output de la herramienta.
